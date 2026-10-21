@@ -1,0 +1,16 @@
+android/.gradle/
+android/local.properties
+android/**/build/
+android/.idea/
+*.jks
+*.keystore
+node_modules/
+work/
+build-result/
+.gradle-ci/
+*.apk
+*.aab
+*-backup-*.json
+*.p12
+*.pem
+*.key
