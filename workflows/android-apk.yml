@@ -1,0 +1,83 @@
+name: Bygg Idrottspuls testapp
+run-name: Idrottspuls testapp – bygge ${{ github.run_number }}
+
+# Startas uttryckligen från Actions. Inga byggen startar vid vanliga filändringar.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: idrottspuls-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Kontrollera och bygg Androidappen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
+    steps:
+      - name: Hämta projektet
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Välj Java 17 och kontrollera Androidverktyg
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${JAVA_HOME_17_X64:-}" ] || [ ! -x "$JAVA_HOME_17_X64/bin/java" ]; then
+            echo "::error::Java 17 saknas i byggmiljön. Bygget behöver uppdateras."
+            exit 1
+          fi
+          if [ -z "${ANDROID_HOME:-}" ] || [ ! -f "$ANDROID_HOME/platforms/android-36/android.jar" ]; then
+            echo "::error::Android SDK 36 saknas i byggmiljön. Bygget behöver uppdateras."
+            exit 1
+          fi
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
+          echo "81a82aaea5abcc8ff68b3dfcb58b3c3c429378efd98e7433460610fecd7ae45f  android/gradle/wrapper/gradle-wrapper.jar" | sha256sum --check
+
+      - name: Kontrollera appens regler och Excel-export
+        run: node --test tests/model.test.mjs
+
+      - name: Bygg den installerbara testappen
+        working-directory: android
+        run: sh ./gradlew --no-daemon --console=plain :app:assembleDebug
+
+      - name: Förbered installationsfilen
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build-result
+          cp android/app/build/outputs/apk/debug/app-debug.apk build-result/Idrottspuls-test.apk
+          printf '%s\n' 'Idrottspuls – testversion' '' 'Installationsfil: Idrottspuls-test.apk' 'Kräver Android 8.0 eller senare.' '' 'Detta är en testapp med separat lagring från den kommande slutversionen.' 'Exportera säkerhetskopior av uppgifter som du vill behålla.' '' 'Testsigneringen gäller detta bygge. Installera inte om över viktig lokal data utan säkerhetskopia.' 'En permanent signeringsnyckel ska ordnas innan appen används i ordinarie drift.' > build-result/LAS-MIG.txt
+          (cd build-result && sha256sum Idrottspuls-test.apk > SHA256SUMS.txt)
+
+      - name: Lägg installationsfilen bland byggresultaten
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Idrottspuls-test-${{ github.run_number }}
+          path: build-result/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Visa hur appen hämtas
+        shell: bash
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'TEXT'
+          ## Idrottspuls är byggd
+
+          Hämta **Idrottspuls-test** under **Artifacts** längst ner på denna körnings sida.
+          Packa upp zip-filen och öppna **Idrottspuls-test.apk** på surfplattan.
+
+          Den här versionen heter **Idrottspuls Test** på surfplattan och sparar lokalt i sin egen appmapp.
+          Testa närvaro, observationer, flygplansläge, omstart, Excel-export och backup/återställning.
+
+          Byggresultatet sparas i sju dagar. Appen som redan installerats slutar inte fungera när byggresultatet tas bort.
+          Detta är en testversion. Vi ordnar permanent signering före ordinarie användning.
+          TEXT
