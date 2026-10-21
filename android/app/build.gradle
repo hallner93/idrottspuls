@@ -1,0 +1,34 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'se.idrottspuls.app'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'se.idrottspuls.app'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+        resValue 'string', 'app_name', 'Idrottspuls'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.test'
+            versionNameSuffix '-test'
+            resValue 'string', 'app_name', 'Idrottspuls Test'
+        }
+        release { minifyEnabled false }
+    }
+    sourceSets { main { assets.srcDir layout.buildDirectory.dir('generated/idrottspulsAssets') } }
+}
+// Package the same verified web application inside the APK. No hosted URL is used.
+tasks.register('syncWebAssets', Copy) {
+    from '../../web'
+    into layout.buildDirectory.dir('generated/idrottspulsAssets/www')
+}
+tasks.named('preBuild').configure { dependsOn 'syncWebAssets' }
+dependencies { implementation 'androidx.webkit:webkit:1.14.0' }
