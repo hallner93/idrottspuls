@@ -1,7 +1,6 @@
-name: Bygg Idrottspuls 
+name: Bygg Idrottspuls
 run-name: Idrottspuls – bygge ${{ github.run_number }}
 
-# Startas uttryckligen från Actions. Inga byggen startar vid vanliga filändringar.
 on:
   workflow_dispatch:
 
@@ -9,12 +8,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: idrottspuls-test-${{ github.ref }}
+  group: idrottspuls-release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Kontrollera och bygg Androidappen
+    name: Kontrollera och bygg signerad Androidapp
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -30,11 +29,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${JAVA_HOME_17_X64:-}" ] || [ ! -x "$JAVA_HOME_17_X64/bin/java" ]; then
-            echo "::error::Java 17 saknas i byggmiljön. Bygget behöver uppdateras."
+            echo "::error::Java 17 saknas i byggmiljön."
             exit 1
           fi
           if [ -z "${ANDROID_HOME:-}" ] || [ ! -f "$ANDROID_HOME/platforms/android-36/android.jar" ]; then
-            echo "::error::Android SDK 36 saknas i byggmiljön. Bygget behöver uppdateras."
+            echo "::error::Android SDK 36 saknas i byggmiljön."
             exit 1
           fi
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
@@ -44,23 +43,49 @@ jobs:
       - name: Kontrollera appens regler och Excel-export
         run: node --test tests/model.test.mjs
 
-      - name: Bygg den installerbara testappen
-        working-directory: android
-        run: sh ./gradlew --no-daemon --console=plain :app:assembleDebug
+      - name: Läs in permanent signeringsnyckel
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.IDROTTSPULS_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.IDROTTSPULS_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::Signeringsnyckel saknas. Lägg till båda Idrottspuls-hemligheterna i projektets Actions-inställningar."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/idrottspuls-release.jks"
+          echo "IDROTTSPULS_KEYSTORE_PATH=$RUNNER_TEMP/idrottspuls-release.jks" >> "$GITHUB_ENV"
 
-      - name: Förbered installationsfilen
+      - name: Bygg signerad Idrottspuls
+        working-directory: android
+        env:
+          IDROTTSPULS_KEYSTORE_PASSWORD: ${{ secrets.IDROTTSPULS_KEYSTORE_PASSWORD }}
+        run: sh ./gradlew --no-daemon --console=plain :app:assembleRelease
+
+      - name: Verifiera och förbered installationsfilen
         shell: bash
         run: |
           set -euo pipefail
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$apk"
+          apksigner=$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)
+          test -n "$apksigner" && test -x "$apksigner"
+          "$apksigner" verify "$apk"
+          certificate=$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          if [ "$certificate" != 'af0e8ec29725b1c3440a80387d8a3c5d9e42c4baca4a06075630f1eded9a73f5' ]; then
+            echo "::error::APK-filen är inte signerad med Idrottspuls permanenta nyckel."
+            exit 1
+          fi
           mkdir -p build-result
-          cp android/app/build/outputs/apk/debug/app-debug.apk build-result/Idrottspuls-test.apk
-          printf '%s\n' 'Idrottspuls – testversion' '' 'Installationsfil: Idrottspuls-test.apk' 'Kräver Android 8.0 eller senare.' '' 'Detta är en testapp med separat lagring från den kommande slutversionen.' 'Exportera säkerhetskopior av uppgifter som du vill behålla.' '' 'Testsigneringen gäller detta bygge. Installera inte om över viktig lokal data utan säkerhetskopia.' 'En permanent signeringsnyckel ska ordnas innan appen används i ordinarie drift.' > build-result/LAS-MIG.txt
-          (cd build-result && sha256sum Idrottspuls-test.apk > SHA256SUMS.txt)
+          cp "$apk" build-result/Idrottspuls.apk
+          printf '%s\n' 'Idrottspuls 1.2.0' '' 'Installationsfil: Idrottspuls.apk' 'Kräver Android 8.0 eller senare.' '' 'Spara en säkerhetskopia i testappen före byte till Idrottspuls.' 'Installera Idrottspuls och återställ sedan kopian där.' 'Spara den permanenta signeringsnyckeln för framtida uppdateringar.' > build-result/LAS-MIG.txt
+          (cd build-result && sha256sum Idrottspuls.apk > SHA256SUMS.txt)
 
       - name: Lägg installationsfilen bland byggresultaten
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: Idrottspuls-test-${{ github.run_number }}
+          name: Idrottspuls-Android-${{ github.run_number }}
           path: build-result/
           if-no-files-found: error
           retention-days: 7
@@ -70,14 +95,14 @@ jobs:
         shell: bash
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<'TEXT'
-          ## Idrottspuls är byggd
+          ## Idrottspuls är klar att installera
 
-          Hämta **Idrottspuls-test** under **Artifacts** längst ner på denna körnings sida.
-          Packa upp zip-filen och öppna **Idrottspuls-test.apk** på surfplattan.
+          Hämta **Idrottspuls-Android** under **Artifacts** längst ner på denna körnings sida.
+          Packa upp zip-filen och öppna **Idrottspuls.apk** på surfplattan.
 
-          Den här versionen heter **Idrottspuls Test** på surfplattan och sparar lokalt i sin egen appmapp.
-          Testa närvaro, observationer, flygplansläge, omstart, Excel-export och backup/återställning.
+          Om du använt den tidigare testappen: skapa först en säkerhetskopia där.
+          Installera den nya appen och återställ säkerhetskopian via **Export & backup**.
+          Kontrollera att dina klasser finns i den nya appen innan du avinstallerar testappen.
 
-          Byggresultatet sparas i sju dagar. Appen som redan installerats slutar inte fungera när byggresultatet tas bort.
-          Detta är en testversion. Vi ordnar permanent signering före ordinarie användning.
+          Byggresultatet sparas i sju dagar. En redan installerad app fortsätter att fungera.
           TEXT
