@@ -55,6 +55,11 @@ jobs:
             exit 1
           fi
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/idrottspuls-release.jks"
+          keyfile_digest=$(sha256sum "$RUNNER_TEMP/idrottspuls-release.jks" | cut -d ' ' -f 1)
+          if [ "$keyfile_digest" != '28da6b9673b3f6a475d1f9665ac70525846ba98e0e795bfc4236db936a4fac40' ]; then
+            echo "::error::GitHub använder en annan nyckelfil än Idrottspuls permanenta signeringsnyckel. Uppdatera IDROTTSPULS_KEYSTORE_BASE64 från den medföljande textfilen."
+            exit 1
+          fi
           echo "IDROTTSPULS_KEYSTORE_PATH=$RUNNER_TEMP/idrottspuls-release.jks" >> "$GITHUB_ENV"
 
       - name: Bygg signerad Idrottspuls
@@ -72,9 +77,13 @@ jobs:
           apksigner=$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)
           test -n "$apksigner" && test -x "$apksigner"
           "$apksigner" verify "$apk"
-          certificate=$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          certificate=$("$apksigner" verify --print-certs "$apk" | awk '/Signer #1 certificate SHA-256 digest:/ {print $NF; exit}' | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
+          if [ -z "$certificate" ]; then
+            echo "::error::Kunde inte läsa APK-filens signeringscertifikat."
+            exit 1
+          fi
           if [ "$certificate" != 'af0e8ec29725b1c3440a80387d8a3c5d9e42c4baca4a06075630f1eded9a73f5' ]; then
-            echo "::error::APK-filen är inte signerad med Idrottspuls permanenta nyckel."
+            echo "::error::APK-filen har ett annat signeringscertifikat ($certificate). Kontrollera att android/app/build.gradle använder signingConfigs.release."
             exit 1
           fi
           mkdir -p build-result
