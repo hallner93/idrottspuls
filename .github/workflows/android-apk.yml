@@ -1,5 +1,5 @@
 name: Bygg Idrottspuls 
-run-name: Idrottspuls testapp – bygge ${{ github.run_number }}
+run-name: Idrottspuls – bygge ${{ github.run_number }}
 
 # Startas uttryckligen från Actions. Inga byggen startar vid vanliga filändringar.
 on:
