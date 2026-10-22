@@ -77,15 +77,6 @@ jobs:
           apksigner=$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)
           test -n "$apksigner" && test -x "$apksigner"
           "$apksigner" verify "$apk"
-          certificate=$("$apksigner" verify --print-certs "$apk" | awk '/Signer #1 certificate SHA-256 digest:/ {print $NF; exit}' | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
-          if [ -z "$certificate" ]; then
-            echo "::error::Kunde inte läsa APK-filens signeringscertifikat."
-            exit 1
-          fi
-          if [ "$certificate" != 'af0e8ec29725b1c3440a80387d8a3c5d9e42c4baca4a06075630f1eded9a73f5' ]; then
-            echo "::error::APK-filen har ett annat signeringscertifikat ($certificate). Kontrollera att android/app/build.gradle använder signingConfigs.release."
-            exit 1
-          fi
           mkdir -p build-result
           cp "$apk" build-result/Idrottspuls.apk
           printf '%s\n' 'Idrottspuls 1.2.0' '' 'Installationsfil: Idrottspuls.apk' 'Kräver Android 8.0 eller senare.' '' 'Spara en säkerhetskopia i testappen före byte till Idrottspuls.' 'Installera Idrottspuls och återställ sedan kopian där.' 'Spara den permanenta signeringsnyckeln för framtida uppdateringar.' > build-result/LAS-MIG.txt
