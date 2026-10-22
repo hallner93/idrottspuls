@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, roster, lessonsForDate, studentStats, filteredSessions, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, roster, lessonsForDate, studentStats, filteredSessions, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -161,4 +161,29 @@ test('Ongoing saved observations are visible immediately while percentages wait 
   const stats=studentStats(d,d.classes[0].students[0],filteredSessions(d),new Date(2026,9,22,12,30));
   assert.equal(stats.total,1);assert.equal(stats.absentRate,100);
   assert.equal(stats.observed,1);assert.equal(stats.observationEligible,1);assert.equal(stats.latest.note,'Pågående lektion');
+});
+
+test('Plain names, line endings and blank lines become reviewable first and last names',()=>{
+  assert.deepEqual(parseStudentList(' Anna Andersson \r\n\r\nOmar Berg\nElias Bergström'),[
+    {first:'Anna',last:'Andersson',line:1},{first:'Omar',last:'Berg',line:3},{first:'Elias',last:'Bergström',line:4},
+  ]);
+  assert.deepEqual(parseStudentList('Anna Maria Svensson'),[{first:'Anna Maria',last:'Svensson',line:1}]);
+});
+
+test('Two Excel columns, column headings and earlier semicolon lists remain importable',()=>{
+  assert.deepEqual(parseStudentList('Förnamn\tEfternamn\nAnna Maria\tSvensson\nOmar\tBerg'),[
+    {first:'Anna Maria',last:'Svensson',line:2},{first:'Omar',last:'Berg',line:3},
+  ]);
+  assert.deepEqual(parseStudentList('Efternamn;Förnamn\nSvensson;Anna Maria'),[{first:'Anna Maria',last:'Svensson',line:2}]);
+  assert.deepEqual(parseStudentList('Maja;Dahl\nOmar;Berg'),[{first:'Maja',last:'Dahl',line:1},{first:'Omar',last:'Berg',line:2}]);
+  assert.deepEqual(parseStudentList('Svensson, Anna'),[{first:'Anna',last:'Svensson',line:1}]);
+});
+
+test('Review edits preserve complex names and reject missing or oversized parts',()=>{
+  const rows=parseStudentList('Ali Al Hassan\nNora van der Berg');
+  rows[0].first='Ali';rows[0].last='Al Hassan';rows[1].first='Nora';rows[1].last='van der Berg';
+  assert.deepEqual(validateStudentList(rows),[{first:'Ali',last:'Al Hassan'},{first:'Nora',last:'van der Berg'}]);
+  assert.throws(()=>validateStudentList(parseStudentList('Anna')),/rad 1/);
+  assert.throws(()=>validateStudentList([{first:'A'.repeat(101),last:'B',line:8}]),/rad 8/);
+  assert.throws(()=>parseStudentList('Anna\tAndersson\t7A'),/Rad 1/);
 });

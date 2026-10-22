@@ -22,6 +22,43 @@ export function emptyData() {
   return { classes: [], schedules: [], sessions: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null } };
 }
 export const studentName = s => `${s.first} ${s.last}`.trim();
+export function parseStudentList(text) {
+  if (typeof text !== 'string' || text.length > 200000) throw new Error('Elevlistan är för stor. Klistra in högst 500 namn åt gången.');
+  const rows = [], clean = value => value.trim().replace(/\s+/gu, ' ');
+  let headerAllowed = true, reversedColumns = false;
+  for (const [index, raw] of text.split(/\r\n|\n|\r/u).entries()) {
+    if (!raw.trim()) continue;
+    const line = index + 1, delimiter = raw.includes('\t') ? '\t' : raw.includes(';') ? ';' : raw.includes(',') ? ',' : null;
+    let first, last;
+    if (delimiter) {
+      const columns = raw.split(delimiter).map(clean);
+      if (columns.length !== 2) throw new Error(`Rad ${line} har fler än två kolumner. Klistra in bara förnamn och efternamn, eller ett helt namn per rad.`);
+      const headings = columns.map(c => c.toLocaleLowerCase('sv'));
+      if (headerAllowed && ((headings[0] === 'förnamn' && headings[1] === 'efternamn') || (headings[0] === 'efternamn' && headings[1] === 'förnamn'))) {
+        reversedColumns = headings[0] === 'efternamn'; headerAllowed = false; continue;
+      }
+      [first, last] = delimiter === ',' || reversedColumns ? [columns[1], columns[0]] : columns;
+    } else {
+      const full = clean(raw);
+      if (headerAllowed && ['namn','elevnamn'].includes(full.toLocaleLowerCase('sv'))) { headerAllowed = false; continue; }
+      const parts = full.split(' ');
+      last = parts.length > 1 ? parts.pop() : '';
+      first = parts.join(' ');
+    }
+    headerAllowed = false;
+    rows.push({ first, last, line });
+    if (rows.length > 500) throw new Error('Klistra in högst 500 namn åt gången.');
+  }
+  return rows;
+}
+export function validateStudentList(rows) {
+  if (!Array.isArray(rows) || rows.length > 500) throw new Error('Klistra in högst 500 namn åt gången.');
+  return rows.map((row, index) => {
+    const first = typeof row.first === 'string' ? row.first.trim() : '', last = typeof row.last === 'string' ? row.last.trim() : '';
+    if (!first || !last || first.length > 100 || last.length > 100) throw new Error(`Kontrollera namnet på rad ${row.line || index + 1}. Fyll i både förnamn och efternamn (högst 100 tecken vardera).`);
+    return { first, last };
+  });
+}
 const collator = new Intl.Collator('sv', { sensitivity: 'base', numeric: true });
 export const sortedStudents = list => [...list].sort((a, b) => collator.compare(a.last, b.last) || collator.compare(a.first, b.first));
 export const assessmentLabel = id => ASSESSMENTS.find(a => a.id === id)?.label || 'Ingen observationsmarkering';

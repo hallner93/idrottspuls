@@ -1,6 +1,20 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Första fungerande version, 1.0.
+En lokal lektionsbok för idrottslärare. Version 1.2.
+
+## Nytt i version 1.2
+
+- Lägg in elever med ett helt namn per rad, till exempel `Anna Andersson`. Du kan också klistra in två kolumner från Excel. Förhandsgranska och rätta för- och efternamn innan du sparar, särskilt namn med flera delar.
+- Androidappen byggs nu som **Idrottspuls** med permanent signering. Följ `GITHUB-START.md` för säkerhetskopia, uppladdning, signering och installation.
+
+## Nytt i version 1.1
+
+- Observationsvalet **Okej**, flera samtidiga omdömen och upp till två betyg per elev och lektion.
+- Samtliga val visas i elevrutan, sammanställningen, historiken, Excel och säkerhetskopian.
+- Frånvaro, kläder och skor visas både i procent och antal. Nämnaren är avslutade lektioner i perioden med sparad närvaro där eleven ingår. Orapporterade och framtida lektioner påverkar inte procenten.
+- Äldre sparade uppgifter och säkerhetskopior läses in automatiskt i det nya dataformatet. Nya kopior behöver version 1.1 eller senare.
+
+Äldre sparade uppgifter kan läsas in i den nya versionen. Skapa en fullständig säkerhetskopia innan du byter från testappen.
 
 ## Börja här
 
@@ -75,21 +89,21 @@ En avinstallation, rensning av appdata eller rensning av webbläsarens webbplats
 
 ## Gör den till en installerbar Androidapp
 
-**Ny väg utan lokal installation av Android Studio:** projektet är nu förberett för ett manuellt GitHub Actions-bygge. Se `GITHUB-START.md`. GitHubversionen bygger först en separat app med namnet **Idrottspuls Test**. Den behöver byggas och provköras innan vi ordnar permanent signering för ordinarie användning.
+**Bygg utan Android Studio:** använd det manuella GitHub Actions-bygget och den permanenta signeringsnyckeln. Se `GITHUB-START.md` för de exakta stegen. Resultatet heter **Idrottspuls.apk**.
 
 Androidprojektet finns i mappen `android`. Appen använder Androids WebView med lokalt paketerade filer, intern fillagring och Androids vanliga öppna/spara-dialoger. Android 8.0 eller senare krävs, med en uppdaterad Android System WebView.
 
 1. Installera [Android Studio](https://developer.android.com/studio) på datorn.
 2. Välj **Open** och öppna projektets `android`-mapp. Behåll `web`-mappen bredvid `android`; bygget hämtar appfilerna därifrån.
 3. Låt Android Studio installera efterfrågad Android SDK 36 och synkronisera Gradle. Projektet använder Android Gradle Plugin 8.13.0, Gradle 8.13, JDK 17 eller senare och AndroidX WebKit 1.14.0. Använd Android Studios kompatibla inbyggda Gradle-JDK.
-4. För första provkörning: aktivera utvecklaralternativ och USB-felsökning på surfplattan, anslut med USB, välj surfplattan i Android Studio och tryck **Run**.
+4. För provkörning via Android Studio: aktivera utvecklaralternativ och USB-felsökning på surfplattan, anslut med USB, välj surfplattan i Android Studio och tryck **Run**.
 5. Prova på den faktiska surfplattan: stäng och öppna appen, använd flygplansläge, ändra en observation, exportera Excel och återställ en säkerhetskopia. Testa även stående/liggande läge och filväljaren.
-6. För en installationsfil: välj **Build → Generate Signed App Bundle or APK → APK**. Skapa en signeringsnyckel och spara den säkert. Samma nyckel och app-id behövs för framtida uppdateringar som ska behålla befintlig data.
+6. För en installationsfil via Android Studio: välj **Build → Generate Signed App Bundle or APK → APK** och använd den redan skapade signeringsnyckeln. Samma nyckel och app-id behövs för framtida uppdateringar som ska behålla befintlig data.
 7. Överför den signerade APK-filen till surfplattan och installera den. Android kan kräva tillåtelse för installation från den valda filhanteraren. Google Play behövs inte för egen installation; organisationens enhetspolicy kan styra hur appar distribueras.
 
 Efter kodändringar höjer du `versionCode` i `android/app/build.gradle`, bygger och signerar med samma nyckel. Ta en säkerhetskopia före uppdatering. Byggprocessen kopierar automatiskt den aktuella `web`-mappen till APK:n.
 
-Det har **inte byggts någon APK i den här miljön**, eftersom Android SDK, Android Studio och en kompatibel bygg-JDK saknas. Androidprojektets manifest och resurs-XML har kontrollerats, men nativebygget, Androids filväljare och internlagringen behöver verifieras genom steg 4–5.
+Det har **inte byggts någon APK i den här miljön**, eftersom Android SDK och en kompatibel bygg-JDK saknas. GitHubbygget behöver köras efter att de två signeringshemligheterna lagts in. Androidprojektets manifest och resurs-XML har kontrollerats, men den signerade APK:n behöver verifieras på surfplattan.
 
 En alternativ installationsväg är att lägga webbversionen på en HTTPS-adress och installera den som webbapp i Chrome på Android. Elevuppgifterna lagras då fortfarande lokalt, men appfilerna hämtas från den adressen första gången. Ingen sådan publicering har gjorts. För önskemålet om en helt lokalt paketerad app är Androidprojektet den förberedda vägen.
 
@@ -99,6 +113,6 @@ Officiell dokumentation: [Lokalt innehåll i Android WebView](https://developer.
 
 Appens webbdel har inga npm-beroenden och behöver inget byggsteg. Kör `node --test tests/model.test.mjs` från projektmappen för regler, sortering, historik, exporturval och backupvalidering. Testsviten skapar en liten provfil för Excel-kontroll i `work/qa` relativt arbetsytan.
 
-Den här versionen har 15 godkända automatiska kontroller. En exporterad arbetsbok har dessutom öppnats med openpyxl för kontroll av svenska tecken, numeriska minuter, textceller, filter och låst rubrikrad. Gränssnittet har provats i den lokala förhandsvisningen. Se `VERIFIERING.md` för genomförda kontroller och kvarvarande Androidkontroller.
+Den här versionen har 29 godkända automatiska kontroller. En exporterad arbetsbok har dessutom öppnats med openpyxl för kontroll av svenska tecken, numeriska minuter, textceller, filter och låst rubrikrad. Gränssnittet för namnimport har provats i den lokala förhandsvisningen. Se `VERIFIERING.md` för genomförda kontroller och kvarvarande Androidkontroller.
 
 Källor: `web/app.js` innehåller gränssnittet, `web/model.js` reglerna, `web/storage.js` lagringen och `web/xlsx.js` Excel-skrivaren. Ändra versionsnamnet i `web/sw.js` när cachade webbfiler uppdateras. Ingen förändring av service workern behövs för Android, där den inte registreras.

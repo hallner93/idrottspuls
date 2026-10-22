@@ -1,4 +1,24 @@
-# Verifiering av Idrottspuls 1.0
+# Verifiering av Idrottspuls
+
+## Version 1.2 – kontrollerat den 22 oktober 2026
+
+- 29 automatiska tester passerar, inklusive nytt namnformat med ett helt namn per rad, två kolumner från Excel och felhantering för ofullständiga namn.
+- Namnimportens förhandsgranskning provades i webbläsaren: tre namn lades in, ett sammansatt efternamn rättades i förhandsgranskningen, klassen sparades och eleverna fanns kvar efter omladdning.
+- Androidprojektet är inställt för en signerad release med app-id `se.idrottspuls.app` och versionCode 3. Det manuella GitHubbygget använder samma permanenta nyckel för framtida uppdateringar. Nyckeln ligger utanför källkodspaketet.
+- Den signerade APK:n är ännu inte byggd. GitHubbygget måste köras när de två hemligheterna har lagts in; installation, återställning av testappens backup och senare uppdatering behöver därefter kontrolleras på Android.
+
+## Version 1.1 – kontrollerat den 22 oktober 2026
+
+- 26 automatiska tester passerar. De omfattar flerval för omdömen, Okej, högst två betyg, bevarande av val när ett tredje betyg nekas, manuell uppföljning ihop med positiva val, F tillsammans med ett annat betyg, ett negativt tillfälle per lektion, sammanställning och Excel-export med alla val, äldre säkerhetskopior och migration av både egen lektionsbok och demodata.
+- Frånvaro-, kläd- och skoprocent kontrolleras mot avslutade lektioner med bekräftad närvaro. Orapporterade utkast, framtida lektioner, pågående lektioner och lektioner utan eleven räknas bort. Utan underlag returneras inget procentvärde.
+- Provat i webbläsarens faktiska gränssnitt med separat demodata: tre omdömen och två betyg valda samtidigt, tredje betyg nekat, avmarkering, sparning och omladdning. Elevruta, observationssammanställning och historik visar alla sparade val.
+- Närvarosammanställningen visar 25 % vid en frånvaro av fyra rapporterade lektioner. Glömda kläder och skor visar också 25 % vid ett tillfälle av fyra.
+- Observationsdialogen har granskats visuellt i smalt mobilläge. Både flervalsrutorna och två markerade betyg visas korrekt; dialogen går att rulla.
+- Androids interna sparfunktion har uppdaterats för det nya dataformatet (version 2). Äldre format (version 1) kan fortfarande läsas in. Androidversionen har höjts till 1.1.0, versionCode 2.
+
+Den tidigare testappen har enligt användaren byggts via GitHub och provats på mobilen. Närvaroregistreringen fungerar enligt användarens återkoppling. **Den nya versionen 1.1 är ännu inte byggd eller provad på Android i detta steg.** Android SDK och bygg-JDK saknas lokalt; nästa kontroll är det nya GitHubbygget och installation på enheten. Testsigneringen kan kräva byte av installation; säkerhetskopia krävs innan en eventuell avinstallation.
+
+## Tidigare kontroller av version 1.0
 
 Kontrollerat den 20 oktober 2026.
 
