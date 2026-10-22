@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, roster, lessonsForDate, studentStats, filteredSessions } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, roster, lessonsForDate, studentStats, filteredSessions, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -41,13 +41,13 @@ test('Deleting or editing a schedule preserves already materialized lessons',()=
   const d=fixture();d.schedules=[{id:'sch',classId:'c1',day:4,start:'08:00',end:'09:00',topic:'Volleyboll',location:'Hall'}];const planned=lessonsForDate(d,'2026-10-01')[0];const s=materialize(d,planned);d.schedules[0].start='10:00';assert.equal(lessonsForDate(d,'2026-10-01')[0].start,'08:00');d.schedules=[];assert.equal(lessonsForDate(d,'2026-10-01')[0].id,s.id);
 });
 test('Summary excludes unsaved attendance, computes rates and retains distinct equipment flags',()=>{
-  const d=fixture();const first=lesson(d,'2026-10-01');first.attendance.s1={absent:false,clothes:true,shoes:false,lateMinutes:7};const second=lesson(d,'2026-10-02');second.attendance.s1.absent=true;const third=lesson(d,'2026-10-03');third.attendanceSavedAt=null;const stats=studentStats(d,d.classes[0].students[0],filteredSessions(d));assert.equal(stats.total,2);assert.equal(stats.rate,50);assert.equal(stats.clothes,1);assert.equal(stats.shoes,0);assert.equal(stats.minutes,7);
+  const d=fixture();const first=lesson(d,'2026-10-01');first.attendance.s1={absent:false,clothes:true,shoes:false,lateMinutes:7};const second=lesson(d,'2026-10-02');second.attendance.s1.absent=true;const third=lesson(d,'2026-10-03');third.attendanceSavedAt=null;const stats=studentStats(d,d.classes[0].students[0],filteredSessions(d),new Date(2026,9,22,12));assert.equal(stats.total,2);assert.equal(stats.rate,50);assert.equal(stats.clothes,1);assert.equal(stats.shoes,0);assert.equal(stats.minutes,7);
 });
 test('Exports respect chosen columns, date and class filters and do not grade absent pupils',()=>{
   const d=fixture(),s=lesson(d,'2026-10-01');s.attendance.s1.absent=true;const rows=exportRows(d,{from:'2026-10-01',to:'2026-10-01',classId:'c1'},['last','first','grade','late']);assert.equal(rows.length,3);assert.deepEqual(rows.find(r=>r[0]==='Öberg'),['Öberg','Åsa','',0]);assert.equal(exportRows(d,{from:'2026-10-02'},['first']).length,1);
 });
 test('Backup round trips preserve local drafts and data',()=>{
-  const d=fixture(),s=lesson(d,'2026-10-01');s.attendanceDraft={s1:{...blankAttendance(),lateMinutes:4}};const text=JSON.stringify({app:'Idrottspuls',schemaVersion:1,mode:'real',data:d});assert.deepEqual(parseBackup(text).data,d);assert.doesNotThrow(()=>validateData(demoData('2026-10-20')));
+  const d=fixture(),s=lesson(d,'2026-10-01');s.attendanceDraft={s1:{...blankAttendance(),lateMinutes:4}};const text=JSON.stringify({app:'Idrottspuls',schemaVersion:1,mode:'real',data:d});assert.deepEqual(parseBackup(text).data,upgradeData(d));assert.doesNotThrow(()=>validateData(demoData('2026-10-20')));
 });
 test('Invalid imports cannot silently overwrite the lektionsbok',()=>{
   const d=fixture();lesson(d,'2026-10-01');const envelope=()=>JSON.stringify({app:'Idrottspuls',schemaVersion:1,mode:'real',data:d});d.sessions[0].attendance.s1.lateMinutes=-4;assert.throws(()=>parseBackup(envelope()));d.sessions[0].attendance.s1.lateMinutes=0;d.classes[0].students[1].id='s1';assert.throws(()=>parseBackup(envelope()));assert.throws(()=>parseBackup('{"app":"Wrong"}'));assert.throws(()=>parseBackup('not json'));
@@ -58,4 +58,107 @@ test('A duplicate scheduled lesson or invalid class/student relationship is reje
 test('Generated Excel is an actual OOXML zip, including Unicode and safe literal formulas',async()=>{
   const rows=[['Förnamn','Efternamn','Anteckning','Sen ankomst'],['Åsa','Öberg','=HYPERLINK("https://example.com")',7],['Amir','Andersson','Passning & samspel <bra>',0]];
   const file=createXlsx(rows);assert.deepEqual([...file.slice(0,4)],[80,75,3,4]);const out=new URL('../../../work/qa/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('export-test.xlsx',out),file);
+});
+
+test('Okej, Bra and manual follow-up can coexist and be deselected independently',()=>{
+  const o={assessments:[],grades:[],note:''};
+  for(const value of ['good','followup','okay']) o.assessments=toggleObservationChoice(o,'assessments',value);
+  assert.deepEqual(observationAssessments(o),['followup','good','okay']);
+  assert.equal(observationLabel(o),'Behov av uppföljning · Bra · Okej');
+  o.assessments=toggleObservationChoice(o,'assessments','okay');
+  assert.deepEqual(o.assessments,['followup','good']);
+  const d=fixture();lesson(d,'2026-10-01',o);
+  assert.deepEqual(followup(d,'s1'),{count:0,manual:true,flagged:true});
+});
+
+test('Two grades persist; a third is rejected without dropping either chosen grade',()=>{
+  const o={assessments:['okay'],grades:[],note:''};
+  o.grades=toggleObservationChoice(o,'grades','C');o.grades=toggleObservationChoice(o,'grades','E');
+  assert.deepEqual(observationGrades(o),['E','C']);assert.equal(gradeLabel(o),'E / C');
+  assert.throws(()=>toggleObservationChoice(o,'grades','B'),/högst två/);
+  assert.deepEqual(o.grades,['E','C']);
+  o.grades=toggleObservationChoice(o,'grades','E');o.grades=toggleObservationChoice(o,'grades','B');
+  assert.deepEqual(o.grades,['C','B']);
+});
+
+test('Okej is an observation and never automatically flags a student',()=>{
+  const d=fixture();for(const date of ['2026-10-01','2026-10-02','2026-10-03']) lesson(d,date,{assessments:['okay'],grades:[],note:''});
+  const stats=studentStats(d,d.classes[0].students[0],filteredSessions(d),new Date(2026,9,22,12));
+  assert.equal(stats.observed,3);assert.equal(stats.flagged,false);assert.equal(stats.count,0);
+  assert.equal(hasObservation({assessments:[],grades:[],note:''}),false);
+});
+
+test('Any F or negative choice counts once per lesson among multiple selections',()=>{
+  const d=fixture();const o={assessments:['good','okay','below','failed','notparticipating'],grades:['F','C'],note:''};
+  const first=lesson(d,'2026-10-01',structuredClone(o));lesson(d,'2026-10-02',structuredClone(o));
+  assert.deepEqual(followup(d,'s1'),{count:2,manual:false,flagged:false});
+  const third=lesson(d,'2026-10-03',structuredClone(o));assert.equal(followup(d,'s1').count,3);assert.equal(followup(d,'s1').flagged,true);
+  third.skipObservation=true;assert.equal(followup(d,'s1').flagged,false);
+  first.attendance.s1.absent=true;assert.equal(followup(d,'s1').count,1);
+});
+
+test('An F in a two-grade observation counts even with positive assessments',()=>{
+  const d=fixture();const s=lesson(d,'2026-10-01',{assessments:['good','okay'],grades:['C','F'],note:''});
+  assert.equal(followup(d,'s1').count,1);s.observations.s1.grades=['E','C'];assert.equal(followup(d,'s1').count,0);
+});
+
+test('Export and summary retain every selected assessment and both grades',async()=>{
+  const d=fixture();lesson(d,'2026-10-01',{assessments:['good','followup','okay'],grades:['B','C'],note:'Passning & samspel'});
+  const rows=exportRows(d,{},['first','assessment','grade','followup']);
+  assert.deepEqual(rows.find(r=>r[0]==='Åsa'),['Åsa','Behov av uppföljning; Bra; Okej','C / B','Ja']);
+  const stats=studentStats(d,d.classes[0].students[0],filteredSessions(d),new Date(2026,9,22,12));
+  assert.equal(stats.observed,1);assert.equal(observationLabel(stats.latest),'Behov av uppföljning · Bra · Okej');assert.equal(gradeLabel(stats.latest),'C / B');
+  const out=new URL('../../../work/qa/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('multi-selection.xlsx',out),createXlsx(rows));
+});
+
+test('Old on-device workspaces and backups migrate without losing history or drafts',()=>{
+  const d=fixture(),s=lesson(d,'2026-10-01',{assessment:'good',grade:'B',note:'Äldre anteckning'});
+  s.attendanceDraft={s1:{...blankAttendance(),lateMinutes:4}};d.classes[0].students[0].followupResetDate='2026-09-30';
+  const original=structuredClone(d),workspace={schemaVersion:1,active:'real',real:d,demo:demoData('2026-10-20')};
+  const upgraded=upgradeWorkspace(workspace),backup=parseBackup(JSON.stringify({app:'Idrottspuls',schemaVersion:1,mode:'real',data:d}));
+  assert.equal(upgraded.schemaVersion,SCHEMA);assert.deepEqual(upgraded.real,backup.data);
+  assert.deepEqual(upgraded.real.sessions[0].observations.s1,{assessments:['good'],grades:['B'],note:'Äldre anteckning'});
+  assert.deepEqual(upgraded.real.sessions[0].attendanceDraft,s.attendanceDraft);
+  assert.equal(upgraded.real.classes[0].students[0].followupResetDate,'2026-09-30');assert.deepEqual(d,original);
+  assert.deepEqual(upgradeWorkspace(upgraded),upgraded);
+});
+
+test('New backup round trips keep all selections, and invalid arrays are rejected',()=>{
+  const d=fixture();const s=lesson(d,'2026-10-01',{assessments:['followup','good','okay'],grades:['E','C'],note:'Alla val'});
+  const backup=()=>JSON.stringify({app:'Idrottspuls',schemaVersion:SCHEMA,mode:'real',data:d});
+  assert.deepEqual(parseBackup(backup()).data,d);
+  for(const invalid of [ ['A','B','C'], ['C','C'], ['Z'], 'C', null ]) {s.observations.s1.grades=invalid;assert.throws(()=>parseBackup(backup()));}
+  s.observations.s1.grades=['E','C'];
+  for(const invalid of [ ['okay','okay'], ['unknown'], 'good', null ]) {s.observations.s1.assessments=invalid;assert.throws(()=>parseBackup(backup()));}
+  assert.throws(()=>upgradeWorkspace({schemaVersion:999,active:'real',real:d,demo:d}));
+});
+
+test('Only past, ended and reported lessons contribute to every percentage',()=>{
+  const d=fixture();
+  const a=lesson(d,'2026-10-01');a.attendance.s1={absent:true,clothes:false,shoes:false,lateMinutes:0};
+  const b=lesson(d,'2026-10-02');b.attendance.s1={absent:false,clothes:true,shoes:true,lateMinutes:0};
+  const c=lesson(d,'2026-10-03');c.attendance.s1={absent:false,clothes:true,shoes:false,lateMinutes:0};
+  lesson(d,'2026-10-04');
+  const unreported=lesson(d,'2026-10-05');unreported.attendanceSavedAt=null;unreported.attendanceDraft={s1:{...blankAttendance(),absent:true}};
+  lesson(d,'2026-10-23');const inProgress=lesson(d,'2026-10-22');inProgress.start='12:00';inProgress.end='13:00';
+  const anotherClass=lesson(d,'2026-10-06');anotherClass.studentIds=['s2'];
+  const now=new Date(2026,9,22,12,30);
+  const stats=studentStats(d,d.classes[0].students[0],d.sessions,now);
+  assert.equal(stats.total,4);assert.equal(stats.rate,75);assert.equal(stats.absentRate,25);assert.equal(stats.clothesRate,50);assert.equal(stats.shoesRate,25);
+  assert.equal(reportedLessons(d.sessions,now).length,5);
+  assert.equal(studentStats(d,d.classes[0].students[0],d.sessions,new Date(2026,9,22,13)).total,5);
+});
+
+test('Unreported lessons and attendance drafts produce no misleading zero percent',()=>{
+  const d=fixture(),s=lesson(d,'2026-10-01');s.attendanceSavedAt=null;
+  const stats=studentStats(d,d.classes[0].students[0],d.sessions,new Date(2026,9,22,12));
+  assert.equal(stats.total,0);assert.equal(stats.rate,null);assert.equal(stats.absentRate,null);assert.equal(stats.clothesRate,null);assert.equal(stats.shoesRate,null);
+});
+
+test('Ongoing saved observations are visible immediately while percentages wait for lesson end',()=>{
+  const d=fixture();const past=lesson(d,'2026-10-21');past.attendance.s1.absent=true;
+  const current=lesson(d,'2026-10-22',{assessments:['good','okay'],grades:['C','B'],note:'Pågående lektion'});current.start='12:00';current.end='13:00';
+  const stats=studentStats(d,d.classes[0].students[0],filteredSessions(d),new Date(2026,9,22,12,30));
+  assert.equal(stats.total,1);assert.equal(stats.absentRate,100);
+  assert.equal(stats.observed,1);assert.equal(stats.observationEligible,1);assert.equal(stats.latest.note,'Pågående lektion');
 });

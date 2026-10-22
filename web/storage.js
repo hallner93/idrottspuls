@@ -1,4 +1,4 @@
-import { SCHEMA, emptyData, demoData, validateData } from './model.js';
+import { SCHEMA, emptyData, demoData, upgradeWorkspace } from './model.js';
 const native = typeof window !== 'undefined' && window.IdrottspulsNative;
 let db;
 let saveQueue = Promise.resolve();
@@ -20,9 +20,7 @@ export async function loadWorkspace() {
     envelope = await new Promise((resolve, reject) => { const r = db.transaction('workspace').objectStore('workspace').get('current'); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
   }
   if (!envelope) envelope = { schemaVersion: SCHEMA, active: 'demo', demo: demoData(), real: emptyData() };
-  if (envelope.schemaVersion !== SCHEMA || !['real','demo'].includes(envelope.active)) throw new Error('Dataversionen kan inte öppnas. Uppgifterna har inte skrivits över.');
-  validateData(envelope.demo); validateData(envelope.real);
-  return envelope;
+  return upgradeWorkspace(envelope);
 }
 export function persist(envelope) {
   // Capture at request time. Serialize writes so an older state never wins.

@@ -158,7 +158,8 @@ public class MainActivity extends Activity {
                 byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
                 if (bytes.length > MAX_BYTES) return "Lektionsboken är för stor. Skapa en säkerhetskopia.";
                 JSONObject object = new JSONObject(json);
-                if (object.getInt("schemaVersion") != 1 || !object.has("real") || !object.has("demo")) return "Felaktigt dataformat.";
+                int schema = object.getInt("schemaVersion");
+                if ((schema != 1 && schema != 2) || !object.has("real") || !object.has("demo")) return "Felaktigt dataformat.";
                 output = stateFile.startWrite(); output.write(bytes); stateFile.finishWrite(output);
                 return "OK";
             } catch (Exception e) { if (output != null) stateFile.failWrite(output); return "Kunde inte spara. Kontrollera ledigt utrymme på surfplattan."; }
