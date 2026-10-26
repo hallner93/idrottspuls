@@ -124,14 +124,42 @@ export function followup(data, studentId) {
   const manual = entries.some(s => observationAssessments(s.observations[studentId]).includes('followup'));
   return { count, manual, flagged: manual || count >= data.settings.threshold };
 }
-export function flaggedStudents(data) {
-  return data.classes.flatMap(c => roster(data, c.id).map(s => ({ ...s, classId: c.id, className: c.name, ...followup(data, s.id) }))).filter(s => s.flagged);
+export function followupSummaries(data) {
+  const summaries = new Map();
+  for (const c of data.classes) for (const student of c.students) summaries.set(student.id, { count: 0, manual: false, flagged: false, resetDate: student.followupResetDate || '0000-00-00' });
+  for (const session of data.sessions) {
+    if (session.skipObservation || !session.attendanceSavedAt || session.date < data.settings.termStart) continue;
+    for (const studentId of session.studentIds) {
+      const summary = summaries.get(studentId);
+      if (!summary || session.date <= summary.resetDate || session.attendance[studentId]?.absent) continue;
+      const observation = session.observations[studentId];
+      if (!observation) continue;
+      if (negative(observation)) summary.count++;
+      if (observationAssessments(observation).includes('followup')) summary.manual = true;
+    }
+  }
+  for (const summary of summaries.values()) {
+    summary.flagged = summary.manual || summary.count >= data.settings.threshold;
+    delete summary.resetDate;
+  }
+  return summaries;
+}
+export function flaggedStudents(data, summaries = followupSummaries(data)) {
+  return data.classes.flatMap(c => roster(data, c.id).map(s => ({ ...s, classId: c.id, className: c.name, ...summaries.get(s.id) }))).filter(s => s.flagged);
 }
 export function filteredSessions(data, filters = {}) {
   return data.sessions.filter(s => s.attendanceSavedAt && (!filters.classId || s.classId === filters.classId) && (!filters.from || s.date >= filters.from) && (!filters.to || s.date <= filters.to)).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start));
 }
 export function unfinishedSessions(data, limit = 4) {
-  return data.sessions.filter(s => !s.complete).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start)).slice(0, limit);
+  const count = Math.max(0, Math.trunc(limit) || 0), newestFirst = (a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start), result = [];
+  if (!count) return result;
+  for (const session of data.sessions) {
+    if (session.complete) continue;
+    const index = result.findIndex(current => newestFirst(session, current) < 0);
+    if (index < 0) { if (result.length < count) result.push(session); }
+    else { result.splice(index, 0, session); if (result.length > count) result.pop(); }
+  }
+  return result;
 }
 export function studentFinalAssessments(data, studentId, sessions = filteredSessions(data, {})) {
   return sessions.filter(session => session.finalAssessment && session.studentIds.includes(studentId));
@@ -270,3 +298,4 @@ export function demoData(today = dateKey()) {
   data.settings.school = 'Min idrottssal';
   return data;
 }
+
