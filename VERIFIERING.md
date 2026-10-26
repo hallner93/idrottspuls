@@ -8,7 +8,7 @@
 - Översikten uppdateras från enhetens lokala kalender vid öppning, återupptagning och lokal midnatt. Manuell navigering sätter ett läge som ligger kvar tills användaren väljer **Till idag**.
 - Tio teman finns, inklusive originaltemat. Temavalet sparas i befintliga lokala inställningar och äldre data får originaltemat som standard.
 - Lov och studiedagar använder oförändrade schemaregler. Appen gör inga nätverksanrop för datumväxlingen och ändrar inte elevuppgifter.
-- Klasser kan sökas på klassnamn och aktiva elevnamn. Översikten innehåller klickbara genvägar till kommande lektioner i stället för den dekorativa volleybollplansbilden.
+- Klasser kan sökas på klassnamn och aktiva elevnamn. Översikten ersätter volleybollplansbilden med oavslutade lektionspass som öppnas direkt för fortsatt dokumentation.
 - Excelbladet har högre rubrikrad, radhöjd anpassad till radbrytningar, växlande radbakgrund och grön markering för slutbedömningar.
 - Utvecklarens namn visas i inställningarna.
 - Androidens versionName är 1.3.3 och versionCode 7. APK:n är inte byggd i denna miljö; GitHub Actions-bygget ska köras efter att uppdateringen är inlagd på main och kräver de två befintliga signeringshemligheterna.
