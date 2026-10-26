@@ -1,6 +1,10 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.4.0.
+En lokal lektionsbok för idrottslärare. Version 1.5.0.
+
+## Nytt i version 1.5.0
+
+- **Terminsbryt** arkiverar hela föregående termin i appen och erbjuder en separat säkerhetskopia. Klasser, elever och schema behålls i den nya terminen; närvaro, utrustningsmarkeringar, observationer, slutbedömningar, lov och terminsplanering börjar om. Arkivet kan visas och laddas ner.
 
 ## Nytt i version 1.4.0
 
