@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -19,6 +19,12 @@ test('Class search matches class and active student names case-insensitively',()
   assert.deepEqual(searchClasses(classes,'åsa'),[classes[0]]);
   assert.deepEqual(searchClasses(classes,'Nils'),[]);
   assert.deepEqual(searchClasses(classes,''),classes);
+});
+test('Unfinished lesson shortcuts include only active sessions, newest first, with a limit',()=>{
+  const d=fixture(),older=lesson(d,'2026-10-01'),finished=lesson(d,'2026-10-03'),newer=lesson(d,'2026-10-08');
+  finished.complete=true;
+  assert.deepEqual(unfinishedSessions(d).map(s=>s.id),[newer.id,older.id]);
+  assert.deepEqual(unfinishedSessions(d,1).map(s=>s.id),[newer.id]);
 });
 test('A student is flagged after three different negative lessons, never after two',()=>{
   const d=fixture();lesson(d,'2026-10-01');lesson(d,'2026-10-02');assert.deepEqual(followup(d,'s1'),{count:2,manual:false,flagged:false});lesson(d,'2026-10-03');assert.equal(followup(d,'s1').flagged,true);
