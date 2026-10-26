@@ -2,7 +2,7 @@
 
 ## Version 1.3.4 – kontrollerat den 26 oktober 2026
 
-- 50 automatiska tester passerar. Regressionstester täcker lokal datumväxling, fortsatt manuell navigering, återgång till Idag, temaval, offlinecache, en rad per elev, slutbedömningar i Excel och migration av äldre lokala data, effektiv historikbearbetning och att appstart inte skriver om hela lagringen.
+- 51 automatiska tester passerar. Regressionstester täcker lokal datumväxling, fortsatt manuell navigering, återgång till Idag, temaval, offlinecache, en rad per elev, slutbedömningar i Excel och migration av äldre lokala data, effektiv historikbearbetning och att appstart inte skriver om hela lagringen.
 - Slutbedömning sparas per lektion, visas som egen sammanställningskolumn och listas med datum och arbetsområde i elevhistoriken. Äldre lektioner migreras som ej markerade.
 - Excel erbjuder en rad per elev med lektionsvärden i datumordning och radbrytningar, samt ett detaljformat med en rad per elev och lektion.
 - Översikten uppdateras från enhetens lokala kalender vid öppning, återupptagning och lokal midnatt. Manuell navigering sätter ett läge som ligger kvar tills användaren väljer **Till idag**.
