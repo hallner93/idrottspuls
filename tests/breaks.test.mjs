@@ -20,7 +20,7 @@ test('Studiedag hides recurring lesson but does not change weekly schedule',()=>
 });
 test('Break preserves saved lesson and manual extra lessons',()=>{
   const d=fixture();
-  const recorded=materialize(d,lessonsForDate(d,'2026-10-26'));
+  const recorded=materialize(d,lessonsForDate(d,'2026-10-26')[0]);
   const extra=materialize(d,{classId:'c',date:'2026-11-02',start:'10:00',end:'11:00',location:'Hall',topic:'Extra',scheduleId:null,planned:true});
   d.breaks.push({id:'b1',label:'Lov',start:'2026-10-26',end:'2026-11-05'});
   assert.deepEqual(lessonsForDate(d,'2026-10-26').map(s=>s.id),[recorded.id]);
