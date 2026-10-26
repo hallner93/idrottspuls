@@ -1,6 +1,6 @@
 # Verifiering av Idrottspuls
 
-## Version 1.4.0 – kontrollerat den 26 oktober 2026
+## Version 1.5.0 – kontrollerat den 26 oktober 2026
 
 - 50 automatiska tester passerar. Regressionstester täcker lokal datumväxling, fortsatt manuell navigering, återgång till Idag, temaval, offlinecache, en rad per elev, slutbedömningar i Excel och migration av äldre lokala data och att appstart inte skriver om hela lagringen.
 - Slutbedömning sparas per lektion, visas som egen sammanställningskolumn och listas med datum och arbetsområde i elevhistoriken. Äldre lektioner migreras som ej markerade.
@@ -11,7 +11,7 @@
 - Klasser kan sökas på klassnamn och aktiva elevnamn. Översikten ersätter volleybollplansbilden med oavslutade lektionspass som öppnas direkt för fortsatt dokumentation.
 - Excelbladet har högre rubrikrad, radhöjd anpassad till radbrytningar, växlande radbakgrund och grön markering för slutbedömningar.
 - Utvecklarens namn visas i inställningarna.
-- Androidens versionName är 1.4.0 och versionCode 8. APK:n är inte byggd i denna miljö; GitHub Actions-bygget ska köras efter att uppdateringen är inlagd på main och kräver de två befintliga signeringshemligheterna.
+- Androidens versionName är 1.5.0 och versionCode 10. APK:n är inte byggd i denna miljö; GitHub Actions-bygget ska köras efter att uppdateringen är inlagd på main och kräver de två befintliga signeringshemligheterna.
 
 ## Version 1.3.1 – kontrollerat den 26 oktober 2026
 
