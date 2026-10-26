@@ -130,6 +130,9 @@ export function flaggedStudents(data) {
 export function filteredSessions(data, filters = {}) {
   return data.sessions.filter(s => s.attendanceSavedAt && (!filters.classId || s.classId === filters.classId) && (!filters.from || s.date >= filters.from) && (!filters.to || s.date <= filters.to)).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start));
 }
+export function unfinishedSessions(data, limit = 4) {
+  return data.sessions.filter(s => !s.complete).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start)).slice(0, limit);
+}
 export function studentFinalAssessments(data, studentId, sessions = filteredSessions(data, {})) {
   return sessions.filter(session => session.finalAssessment && session.studentIds.includes(studentId));
 }
