@@ -243,6 +243,8 @@ async function performAction(action,el) {
     case 'manage-class':showClassForm(getClass(id));break;
     case 'edit-student':showStudentForm(id);break;
     case 'archive-student': {const c=data().classes.find(c=>c.students.some(s=>s.id===id)),s=c.students.find(s=>s.id===id);s.archived=!s.archived;await save();render();showClassForm(c);toast(s.archived?'Eleven är arkiverad. Historiken finns kvar.':'Eleven är aktiv igen.');break;}
+    case 'add-break':showBreakForm();break;
+    case 'delete-break':confirmDialog('Ta bort uppehållet?','Ordinarie schemalektioner visas då igen under perioden. Sparade lektioner påverkas inte.','Ta bort',async()=>{data().breaks=data().breaks.filter(b=>b.id!==id);await save();modal.close();render();toast('Uppehållet är borttaget.');});break;
     case 'add-schedule':showScheduleForm(null,el.dataset.day===undefined?null:Number(el.dataset.day));break;
     case 'edit-schedule':showScheduleForm(id);break;
     case 'add-lesson':showScheduleForm(null,null,true);break;
@@ -291,12 +293,16 @@ document.addEventListener('change',async event=>{
     if(el.dataset.sessionField==='skipObservation'){getSession().skipObservation=el.checked;await save();render();}
     if(el.dataset.filter){const filters=el.dataset.scope==='export'?ui.exportFilters:ui.filters;filters[el.dataset.filter]=el.value;if(filters.from&&filters.to&&filters.from>filters.to)toast('Startdatum ligger efter slutdatum. Ändra perioden.',true);render();}
     if(el.dataset.exportField){if(el.checked)ui.fields=EXPORT_FIELDS.map(f=>f[0]).filter(k=>ui.fields.includes(k)||k===el.dataset.exportField);else ui.fields=ui.fields.filter(k=>k!==el.dataset.exportField);render();}
-    if(el.dataset.settingUi==='showArchived'){ui.showArchived=el.checked;render();}
+    if(el.id==='break-kind'){
+       const end=modal.querySelector('#break-end-field'),input=modal.querySelector('#break-end');
+       if(end && input){end.style.display=el.value==='range'?'grid':'none';input.required=el.value==='range';}
+     }
+     if(el.dataset.settingUi==='showArchived'){ui.showArchived=el.checked;render();}
     if(el.id==='restore-file'&&el.files[0]){const file=el.files[0];if(file.size>20000000)throw new Error('Säkerhetskopian är för stor (max 20 MB).');const backup=parseBackup(await file.text());confirmDialog('Återställ lektionsboken?',`Filen innehåller <strong>${backup.data.classes.length} klasser och ${backup.data.sessions.length} lektioner</strong>${backup.mode==='demo'?' med demodata':''}. Den ersätter din nuvarande ${backup.mode==='demo'?'demodata':'egna lektionsbok'}. Skapa en säkerhetskopia av nuvarande uppgifter först om du vill behålla dem.`,'Återställ kopian',async()=>{workspace[backup.mode]=backup.data;workspace.active=backup.mode;ui.filters={classId:'',from:data().settings.termStart,to:dateKey()};ui.exportFilters={...ui.filters};await save();await navigate('overview');toast('Säkerhetskopian är återställd.');});el.value='';}
   }catch(e){toast(e.message,true);}
 });
 document.addEventListener('submit',async event=>{
-  const form=event.target;if(!['class-form','student-form','schedule-form','settings-form'].includes(form.id))return;event.preventDefault();
+  const form=event.target;if(!['class-form','student-form','schedule-form','settings-form','break-form'].includes(form.id))return;event.preventDefault();
   if(form.dataset.busy)return;form.dataset.busy='true';
   try {
     const values=Object.fromEntries(new FormData(form));
@@ -307,7 +313,19 @@ document.addEventListener('submit',async event=>{
       const c=getClass(values.classId);if(c){if(c.students.length+newStudents.length>500)throw new Error('Max 500 elever per klass.');c.name=name;c.students.push(...newStudents);}else{if(newStudents.length>500||data().classes.length>=200)throw new Error('För många klasser eller elever.');data().classes.push({id:uid(),name,color:'sage',students:newStudents});}await save();modal.close();render();toast('Klassen är sparad.');
     }
     if(form.id==='student-form'){const first=values.first.trim(),last=values.last.trim();if(!first||!last)throw new Error('Skriv både förnamn och efternamn.');const c=data().classes.find(c=>c.students.some(s=>s.id===values.studentId)),student=c.students.find(s=>s.id===values.studentId);student.first=first;student.last=last;await save();render();showClassForm(c);toast('Eleven är uppdaterad.');}
-    if(form.id==='schedule-form'){
+    if(form.id==='break-form'){
+       const validDate=value=>/^\d{4}-\d{2}-\d{2}$/.test(value) && dateKey(parseDate(value))===value;
+       if(!validDate(values.date))throw new Error('Välj ett giltigt datum.');
+       const kind=values.kind, weekday=parseDate(values.date).getDay();
+       const start=kind==='week'?addDays(values.date,1-(weekday||7)):values.date;
+       const end=kind==='week'?addDays(start,6):kind==='day'?start:values.end;
+       const label=values.label.trim();
+       if(!['day','week','range'].includes(kind)||!validDate(end)||end<start||end>addDays(start,366))throw new Error('Kontrollera datumintervallet (max ett år).');
+       if(!label||label.length>100)throw new Error('Ange en anledning till uppehållet.');
+       if(data().breaks.length>=500)throw new Error('Du har lagt in för många uppehåll.');
+       data().breaks.push({id:uid(),start,end,label});await save();modal.close();render();toast('Uppehållet har sparats. Veckoschemat är oförändrat.');
+     }
+     if(form.id==='schedule-form'){
       if(values.end<=values.start)throw new Error('Sluttiden måste vara efter starttiden.');if(!getClass(values.classId))throw new Error('Välj en klass.');
       const fields={classId:values.classId,start:values.start,end:values.end,topic:values.topic.trim(),location:values.location.trim()};
       if(values.oneOff==='yes'){const session=materialize(data(),{...fields,date:values.date,scheduleId:null,planned:true});await save();ui.date=values.date;await navigate('lesson',session.id);}
