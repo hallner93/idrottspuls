@@ -8,7 +8,7 @@ En lokal lektionsbok för idrottslärare. Version 1.3.3.
 - Välj mellan tio färgteman i **Inställningar**. Originaltemat Skog är kvar som standard.
 - Excel-exporten kan visa en rad per elev med samtliga lektioner samlade i cellerna, eller behålla detaljformatet med en rad per elev och lektion.
 - Markera en lektion som **Slutbedömning**. Markeringen visas i elevens sammanställning och i en egen Excel-kolumn.
-- Sök efter klass eller elev under **Klasser & elever**. En översiktspanel visar också kommande lektionspass som genvägar.
+- Sök efter klass eller elev under **Klasser & elever**. Översiktens sidopanel visar oavslutade lektionspass och öppnar dem direkt för komplettering.
 - Excelrapporten har tydligare radmarkering, läsbara radbrytningar och grön markering för slutbedömningar.
 - Utvecklarens namn finns under **Inställningar → Lagring & app**.
 - Lov och studiedagar påverkas inte av datumväxlingen. Alla uppgifter fortsätter att sparas lokalt.
