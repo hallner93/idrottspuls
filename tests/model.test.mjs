@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -46,6 +46,15 @@ test('Weekly lesson plans follow the class year group and the three scheduled le
   setLessonPlan(d,7,'2026-10-26',3,'Balans');
   assert.equal(lessonsForDate(d,'2026-10-30')[0].topic,'Orientering utomhus','a started lesson keeps its editable topic');
   assert.equal(lessonPlan(d,7,'2026-10-26',3).topic,'Balans','changing a lesson does not edit the shared plan');
+});
+test('The term week list follows the configured term start and marks full and partial breaks',()=>{
+  const d=fixture();d.classes[0].yearGroup=7;
+  d.schedules=[{id:'mon',classId:'c1',day:1,start:'08:00',end:'09:00'},{id:'wed',classId:'c1',day:3,start:'08:00',end:'09:00'},{id:'fri',classId:'c1',day:5,start:'08:00',end:'09:00'}];
+  d.settings.termStart='2026-10-28';d.breaks=[{id:'study',start:'2026-10-26',end:'2026-10-26',label:'Studiedag'},{id:'holiday',start:'2026-11-02',end:'2026-11-08',label:'Höstlov'}];
+  const weeks=termPlanWeeks(d,7,d.settings.termStart,3);
+  assert.deepEqual(weeks.map(w=>w.weekStart),['2026-10-26','2026-11-02','2026-11-09']);
+  assert.deepEqual(planWeekStatus(d,7,'2026-10-26'),{scheduledCount:3,activeCount:2,affectedCount:1,excluded:false});
+  assert.equal(weeks[1].excluded,true);assert.equal(weeks[1].activeCount,0);assert.equal(weeks[2].excluded,false);
 });
 test('Copying a weekly plan replaces only the selected year groups and keeps plans separate by week',()=>{
   const d=fixture();setLessonPlan(d,7,'2026-10-26',1,'Volleyboll');setLessonPlan(d,7,'2026-10-26',2,'Rörelse');
