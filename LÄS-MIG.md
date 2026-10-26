@@ -1,8 +1,8 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.3.4.
+En lokal lektionsbok för idrottslärare. Version 1.4.0.
 
-## Nytt i version 1.3.4
+## Nytt i version 1.4.0
 
 - Översikten följer automatiskt enhetens lokala datum och vecka när appen öppnas, återupptas och när dagen byter datum. Manuell bläddring ligger kvar tills du väljer **Till idag**.
 - Välj mellan tio färgteman i **Inställningar**. Originaltemat Skog är kvar som standard.
