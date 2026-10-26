@@ -19,7 +19,7 @@ export const parseDate = value => new Date(`${value}T12:00:00`);
 export function addDays(value, count) { const d = parseDate(value); d.setDate(d.getDate() + count); return dateKey(d); }
 export function termStart(today = dateKey()) { return `${today.slice(0, 4)}-${today.slice(5, 7) >= '08' ? '08' : '01'}-01`; }
 export function emptyData() {
-  return { classes: [], schedules: [], sessions: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null } };
+  return { classes: [], schedules: [], sessions: [], breaks: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null } };
 }
 export const studentName = s => `${s.first} ${s.last}`.trim();
 export function parseStudentList(text) {
@@ -89,9 +89,14 @@ export function sessionStudents(data, session) {
   const current = data.classes.find(c => c.id === session.classId)?.students || [];
   return sortedStudents(session.studentIds.map(id => current.find(s => s.id === id) || { id, ...session.studentNames[id], archived: true }));
 }
+export function scheduleBreakForDate(data, date) {
+  return (data.breaks || []).find(b => b.start <= date && date <= b.end) || null;
+}
 export function lessonsForDate(data, date) {
   const day = parseDate(date).getDay();
-  const list = data.schedules.filter(s => s.day === day).map(s => {
+  // Only suppress unsaved recurring lessons; existing and one-off lessons remain available.
+  const recurring = scheduleBreakForDate(data, date) ? [] : data.schedules.filter(s => s.day === day);
+  const list = recurring.map(s => {
     const saved = data.sessions.find(l => l.date === date && l.scheduleId === s.id);
     return saved || { ...s, id: `planned:${s.id}`, scheduleId: s.id, date, planned: true };
   });
@@ -158,6 +163,14 @@ export function validateData(data) {
   assert(isObj(data), 'data saknas.');
   for (const k of ['classes', 'schedules', 'sessions']) assert(Array.isArray(data[k]), `${k} saknas.`);
   assert(data.classes.length <= 200 && data.schedules.length <= 2000 && data.sessions.length <= 30000, 'filen innehåller för många poster.');
+  if (data.breaks !== undefined) {
+    assert(Array.isArray(data.breaks) && data.breaks.length <= 500, 'fel i lov och studiedagar.');
+    const breakIds = new Set();
+    for (const b of data.breaks) {
+      assert(isObj(b) && isText(b.id, 100) && b.id && !breakIds.has(b.id) && isDate(b.start) && isDate(b.end) && b.start <= b.end && b.end <= addDays(b.start, 366) && isText(b.label, 100) && b.label.trim(), 'ogiltigt schemauppehåll.');
+      breakIds.add(b.id);
+    }
+  }
   const classIds = new Set(), studentIds = new Set(), sessionIds = new Set(), scheduleIds = new Set();
   for (const c of data.classes) {
     assert(isText(c.id, 100) && !classIds.has(c.id) && isText(c.name, 80) && c.name.trim() && Array.isArray(c.students) && c.students.length <= 500, 'fel i en klass.'); classIds.add(c.id);
@@ -192,6 +205,7 @@ export function validateData(data) {
 export function upgradeData(data) {
   validateData(data);
   const upgraded = clone(data);
+  upgraded.breaks ??= [];
   for (const session of upgraded.sessions) for (const [id, o] of Object.entries(session.observations)) {
     const { assessment, grade, ...rest } = o;
     session.observations[id] = { ...rest, assessments: observationAssessments(o), grades: observationGrades(o) };
