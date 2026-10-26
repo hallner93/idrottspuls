@@ -1,8 +1,8 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.3.3.
+En lokal lektionsbok för idrottslärare. Version 1.3.4.
 
-## Nytt i version 1.3.3
+## Nytt i version 1.3.4
 
 - Översikten följer automatiskt enhetens lokala datum och vecka när appen öppnas, återupptas och när dagen byter datum. Manuell bläddring ligger kvar tills du väljer **Till idag**.
 - Välj mellan tio färgteman i **Inställningar**. Originaltemat Skog är kvar som standard.
@@ -127,3 +127,4 @@ Appens webbdel har inga npm-beroenden och behöver inget byggsteg. Kör `node --
 Den här versionen har 29 godkända automatiska kontroller. En exporterad arbetsbok har dessutom öppnats med openpyxl för kontroll av svenska tecken, numeriska minuter, textceller, filter och låst rubrikrad. Gränssnittet för namnimport har provats i den lokala förhandsvisningen. Se `VERIFIERING.md` för genomförda kontroller och kvarvarande Androidkontroller.
 
 Källor: `web/app.js` innehåller gränssnittet, `web/model.js` reglerna, `web/storage.js` lagringen och `web/xlsx.js` Excel-skrivaren. Ändra versionsnamnet i `web/sw.js` när cachade webbfiler uppdateras. Ingen förändring av service workern behövs för Android, där den inte registreras.
+
