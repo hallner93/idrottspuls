@@ -22,6 +22,10 @@ export function emptyData() {
   return { classes: [], schedules: [], sessions: [], breaks: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green' } };
 }
 export const studentName = s => `${s.first} ${s.last}`.trim();
+export function searchClasses(classes, query = '') {
+  const term = String(query).trim().toLocaleLowerCase('sv');
+  return classes.filter(c => `${c.name} ${c.students.filter(s => !s.archived).map(studentName).join(' ')}`.toLocaleLowerCase('sv').includes(term));
+}
 export function parseStudentList(text) {
   if (typeof text !== 'string' || text.length > 200000) throw new Error('Elevlistan är för stor. Klistra in högst 500 namn åt gången.');
   const rows = [], clean = value => value.trim().replace(/\s+/gu, ' ');
@@ -125,6 +129,9 @@ export function flaggedStudents(data) {
 }
 export function filteredSessions(data, filters = {}) {
   return data.sessions.filter(s => s.attendanceSavedAt && (!filters.classId || s.classId === filters.classId) && (!filters.from || s.date >= filters.from) && (!filters.to || s.date <= filters.to)).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start));
+}
+export function unfinishedSessions(data, limit = 4) {
+  return data.sessions.filter(s => !s.complete).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start)).slice(0, limit);
 }
 export function studentFinalAssessments(data, studentId, sessions = filteredSessions(data, {})) {
   return sessions.filter(session => session.finalAssessment && session.studentIds.includes(studentId));
