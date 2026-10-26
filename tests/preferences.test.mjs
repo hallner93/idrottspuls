@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { dateKey, emptyData, upgradeData } from '../web/model.js';
 import { THEMES, normalizeTheme, navigateToDate, refreshOverviewDate, returnToToday } from '../web/preferences.js';
 
@@ -46,6 +47,11 @@ test('ten color themes include the original green and reject unknown values safe
   assert.equal(THEMES[0].color, '#36594b');
   assert.equal(normalizeTheme('violet'), 'violet');
   assert.equal(normalizeTheme('unknown'), 'green');
+});
+
+test('the new preference module is included in the offline app cache', async () => {
+  const serviceWorker = await readFile(new URL('../web/sw.js', import.meta.url), 'utf8');
+  assert.match(serviceWorker, /['"]\.\/preferences\.js['"]/);
 });
 
 test('older local workspaces gain the default theme without changing lessons or students', () => {
