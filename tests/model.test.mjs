@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -28,6 +28,16 @@ test('Unfinished lesson shortcuts include only active sessions, newest first, wi
 });
 test('A student is flagged after three different negative lessons, never after two',()=>{
   const d=fixture();lesson(d,'2026-10-01');lesson(d,'2026-10-02');assert.deepEqual(followup(d,'s1'),{count:2,manual:false,flagged:false});lesson(d,'2026-10-03');assert.equal(followup(d,'s1').flagged,true);
+});
+test('The overview follow-up index matches per-student results without rescanning sessions for every pupil',()=>{
+  const d=fixture();
+  lesson(d,'2026-10-01',{assessments:['below'],grades:[],note:''});
+  lesson(d,'2026-10-02',{assessments:['followup'],grades:[],note:''});
+  const absent=lesson(d,'2026-10-03');absent.attendance.s1.absent=true;
+  const unsaved=lesson(d,'2026-10-04');unsaved.attendanceSavedAt=null;
+  d.classes[0].students[0].followupResetDate='2026-10-01';
+  const indexed=followupSummaries(d);
+  for(const student of d.classes[0].students) assert.deepEqual(indexed.get(student.id),followup(d,student.id));
 });
 test('F and a negative assessment on the same lesson count once; editing is an upsert',()=>{
   const d=fixture(),s=lesson(d,'2026-10-01');assert.equal(followup(d,'s1').count,1);s.observations.s1.grade='E';assert.equal(followup(d,'s1').count,1);s.observations.s1.assessment='good';assert.equal(followup(d,'s1').count,0);
@@ -236,3 +246,4 @@ test('Review edits preserve complex names and reject missing or oversized parts'
   assert.throws(()=>validateStudentList([{first:'A'.repeat(101),last:'B',line:8}]),/rad 8/);
   assert.throws(()=>parseStudentList('Anna\tAndersson\t7A'),/Rad 1/);
 });
+
