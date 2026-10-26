@@ -127,4 +127,3 @@ Appens webbdel har inga npm-beroenden och behöver inget byggsteg. Kör `node --
 Den här versionen har 29 godkända automatiska kontroller. En exporterad arbetsbok har dessutom öppnats med openpyxl för kontroll av svenska tecken, numeriska minuter, textceller, filter och låst rubrikrad. Gränssnittet för namnimport har provats i den lokala förhandsvisningen. Se `VERIFIERING.md` för genomförda kontroller och kvarvarande Androidkontroller.
 
 Källor: `web/app.js` innehåller gränssnittet, `web/model.js` reglerna, `web/storage.js` lagringen och `web/xlsx.js` Excel-skrivaren. Ändra versionsnamnet i `web/sw.js` när cachade webbfiler uppdateras. Ingen förändring av service workern behövs för Android, där den inte registreras.
-
