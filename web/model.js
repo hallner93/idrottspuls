@@ -144,14 +144,29 @@ export function studentStats(data, student, sessions, now = new Date()) {
 export const EXPORT_FIELDS = [
   ['first', 'Förnamn'], ['last', 'Efternamn'], ['class', 'Klass'], ['date', 'Datum'], ['time', 'Tid'], ['topic', 'Arbetsområde'], ['attendance', 'Närvaro'], ['clothes', 'Glömt kläder'], ['shoes', 'Glömt skor'], ['late', 'Sen ankomst (min)'], ['assessment', 'Observation'], ['grade', 'Lektionsbedömning'], ['note', 'Anteckning'], ['followup', 'Behov av uppföljning'],
 ];
+function exportValues(data, session, student) {
+  const a = session.attendance[student.id] || blankAttendance();
+  const o = session.skipObservation || a.absent ? {} : session.observations[student.id] || {};
+  return { first: student.first, last: student.last, class: session.className || data.classes.find(c => c.id === session.classId)?.name || '', date: session.date, time: `${session.start}–${session.end}`, topic: session.topic || '', attendance: a.absent ? 'Frånvarande' : 'Närvarande', clothes: a.clothes ? 'Ja' : 'Nej', shoes: a.shoes ? 'Ja' : 'Nej', late: a.lateMinutes || 0, assessment: session.skipObservation ? 'Observation avstådd' : a.absent ? 'Frånvarande' : !hasObservation(o) ? 'Ej observerad' : observationLabel(o, '; ') || 'Ingen observationsmarkering', grade: gradeLabel(o), note: o.note || '', followup: followup(data, student.id).flagged ? 'Ja' : 'Nej' };
+}
 export function exportRows(data, filters, selected) {
   const rows = [selected.map(key => EXPORT_FIELDS.find(f => f[0] === key)[1])];
   for (const session of filteredSessions(data, filters).reverse()) for (const student of sessionStudents(data, session)) {
-    const a = session.attendance[student.id] || blankAttendance();
-    const o = session.skipObservation || a.absent ? {} : session.observations[student.id] || {};
-    const values = { first: student.first, last: student.last, class: session.className || data.classes.find(c => c.id === session.classId)?.name || '', date: session.date, time: `${session.start}–${session.end}`, topic: session.topic || '', attendance: a.absent ? 'Frånvarande' : 'Närvarande', clothes: a.clothes ? 'Ja' : 'Nej', shoes: a.shoes ? 'Ja' : 'Nej', late: a.lateMinutes || 0, assessment: session.skipObservation ? 'Observation avstådd' : a.absent ? 'Frånvarande' : !hasObservation(o) ? 'Ej observerad' : observationLabel(o, '; ') || 'Ingen observationsmarkering', grade: gradeLabel(o), note: o.note || '', followup: followup(data, student.id).flagged ? 'Ja' : 'Nej' };
+    const values = exportValues(data, session, student);
     rows.push(selected.map(key => values[key]));
   }
+  return rows;
+}
+export function exportRowsByStudent(data, filters, selected) {
+  const rows = [selected.map(key => EXPORT_FIELDS.find(f => f[0] === key)[1])], students = new Map();
+  for (const session of filteredSessions(data, filters).reverse()) for (const student of sessionStudents(data, session)) {
+    const values = exportValues(data, session, student);
+    let record = students.get(student.id);
+    if (!record) { record = { values, events: [] }; students.set(student.id, record); }
+    record.events.push(values);
+  }
+  const records = [...students.values()].sort((a, b) => a.values.class.localeCompare(b.values.class, 'sv') || a.values.last.localeCompare(b.values.last, 'sv') || a.values.first.localeCompare(b.values.first, 'sv'));
+  for (const record of records) rows.push(selected.map(key => ['first','last','class','followup'].includes(key) ? record.values[key] : record.events.map(event => String(event[key] ?? '').replace(/\r\n?|\n/g, ' ↵ ') || '–').join('\n')));
   return rows;
 }
 function assert(condition, message) { if (!condition) throw new Error(`Säkerhetskopian är ogiltig: ${message}`); }

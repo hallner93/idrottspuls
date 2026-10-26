@@ -6,6 +6,7 @@ En lokal lektionsbok för idrottslärare. Version 1.3.1.
 
 - Översikten följer automatiskt enhetens lokala datum och vecka när appen öppnas, återupptas och när dagen byter datum. Manuell bläddring ligger kvar tills du väljer **Till idag**.
 - Välj mellan tio färgteman i **Inställningar**. Originaltemat Skog är kvar som standard.
+- Excel-exporten kan visa en rad per elev med samtliga lektioner samlade i cellerna, eller behålla detaljformatet med en rad per elev och lektion.
 - Lov och studiedagar påverkas inte av datumväxlingen. Alla uppgifter fortsätter att sparas lokalt.
 
 ## Nytt i version 1.2
@@ -47,7 +48,7 @@ För att starta webbversionen igen på en dator:
 - Avstådd observation för en hel lektion.
 - Sammanställningar för närvaro/utrustning och observationer/bedömning, filtrerade på klass och datum.
 - Elevhistorik med möjlighet att öppna och komplettera gamla lektioner.
-- Excel-export i verkligt `.xlsx`-format med valbara kolumner, klass och datumintervall.
+- Excel-export i verkligt `.xlsx`-format med valbara kolumner, klass, datumintervall och radformat per elev eller per lektion.
 - Fullständig lokal säkerhetskopia i JSON och validerad återställning.
 - En webbapp med offlinefiler samt ett Androidprojekt som paketerar samma app lokalt.
 
