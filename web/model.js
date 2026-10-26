@@ -22,6 +22,10 @@ export function emptyData() {
   return { classes: [], schedules: [], sessions: [], breaks: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green' } };
 }
 export const studentName = s => `${s.first} ${s.last}`.trim();
+export function searchClasses(classes, query = '') {
+  const term = String(query).trim().toLocaleLowerCase('sv');
+  return classes.filter(c => `${c.name} ${c.students.filter(s => !s.archived).map(studentName).join(' ')}`.toLocaleLowerCase('sv').includes(term));
+}
 export function parseStudentList(text) {
   if (typeof text !== 'string' || text.length > 200000) throw new Error('Elevlistan är för stor. Klistra in högst 500 namn åt gången.');
   const rows = [], clean = value => value.trim().replace(/\s+/gu, ' ');
