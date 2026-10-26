@@ -1,5 +1,13 @@
 # Verifiering av Idrottspuls
 
+## Version 1.3.1 – kontrollerat den 26 oktober 2026
+
+- 40 automatiska tester passerar. Sju nya regressionstester täcker lokal datumväxling, fortsatt manuell navigering, återgång till Idag, temaval och migration av äldre lokala data.
+- Översikten uppdateras från enhetens lokala kalender vid öppning, återupptagning och lokal midnatt. Manuell navigering sätter ett läge som ligger kvar tills användaren väljer **Till idag**.
+- Tio teman finns, inklusive originaltemat. Temavalet sparas i befintliga lokala inställningar och äldre data får originaltemat som standard.
+- Lov och studiedagar använder oförändrade schemaregler. Appen gör inga nätverksanrop för datumväxlingen och ändrar inte elevuppgifter.
+- Androidens versionName är 1.3.1 och versionCode 5. APK:n är inte byggd i denna miljö; GitHub Actions-bygget ska köras efter att uppdateringen är inlagd på main och kräver de två befintliga signeringshemligheterna.
+
 ## Version 1.2 – kontrollerat den 22 oktober 2026
 
 - 29 automatiska tester passerar, inklusive nytt namnformat med ett helt namn per rad, två kolumner från Excel och felhantering för ofullständiga namn.

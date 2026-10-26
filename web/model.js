@@ -19,7 +19,7 @@ export const parseDate = value => new Date(`${value}T12:00:00`);
 export function addDays(value, count) { const d = parseDate(value); d.setDate(d.getDate() + count); return dateKey(d); }
 export function termStart(today = dateKey()) { return `${today.slice(0, 4)}-${today.slice(5, 7) >= '08' ? '08' : '01'}-01`; }
 export function emptyData() {
-  return { classes: [], schedules: [], sessions: [], breaks: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null } };
+  return { classes: [], schedules: [], sessions: [], breaks: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green' } };
 }
 export const studentName = s => `${s.first} ${s.last}`.trim();
 export function parseStudentList(text) {
@@ -206,6 +206,7 @@ export function upgradeData(data) {
   validateData(data);
   const upgraded = clone(data);
   upgraded.breaks ??= [];
+  upgraded.settings.theme ??= 'green';
   for (const session of upgraded.sessions) for (const [id, o] of Object.entries(session.observations)) {
     const { assessment, grade, ...rest } = o;
     session.observations[id] = { ...rest, assessments: observationAssessments(o), grades: observationGrades(o) };

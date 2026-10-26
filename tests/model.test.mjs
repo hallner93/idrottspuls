@@ -57,7 +57,7 @@ test('A duplicate scheduled lesson or invalid class/student relationship is reje
 });
 test('Generated Excel is an actual OOXML zip, including Unicode and safe literal formulas',async()=>{
   const rows=[['Förnamn','Efternamn','Anteckning','Sen ankomst'],['Åsa','Öberg','=HYPERLINK("https://example.com")',7],['Amir','Andersson','Passning & samspel <bra>',0]];
-  const file=createXlsx(rows);assert.deepEqual([...file.slice(0,4)],[80,75,3,4]);const out=new URL('../../../work/qa/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('export-test.xlsx',out),file);
+  const file=createXlsx(rows);assert.deepEqual([...file.slice(0,4)],[80,75,3,4]);const out=new URL('../work/qa/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('export-test.xlsx',out),file);
 });
 
 test('Okej, Bra and manual follow-up can coexist and be deselected independently',()=>{
@@ -108,7 +108,7 @@ test('Export and summary retain every selected assessment and both grades',async
   assert.deepEqual(rows.find(r=>r[0]==='Åsa'),['Åsa','Behov av uppföljning; Bra; Okej','C / B','Ja']);
   const stats=studentStats(d,d.classes[0].students[0],filteredSessions(d),new Date(2026,9,22,12));
   assert.equal(stats.observed,1);assert.equal(observationLabel(stats.latest),'Behov av uppföljning · Bra · Okej');assert.equal(gradeLabel(stats.latest),'C / B');
-  const out=new URL('../../../work/qa/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('multi-selection.xlsx',out),createXlsx(rows));
+  const out=new URL('../work/qa/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('multi-selection.xlsx',out),createXlsx(rows));
 });
 
 test('Old on-device workspaces and backups migrate without losing history or drafts',()=>{
