@@ -1,6 +1,6 @@
 # Verifiering av Idrottspuls
 
-## Version 1.3.3 – kontrollerat den 26 oktober 2026
+## Version 1.3.4 – kontrollerat den 26 oktober 2026
 
 - 45 automatiska tester passerar. Regressionstester täcker lokal datumväxling, fortsatt manuell navigering, återgång till Idag, temaval, offlinecache, en rad per elev, slutbedömningar i Excel och migration av äldre lokala data.
 - Slutbedömning sparas per lektion, visas som egen sammanställningskolumn och listas med datum och arbetsområde i elevhistoriken. Äldre lektioner migreras som ej markerade.
@@ -11,7 +11,7 @@
 - Klasser kan sökas på klassnamn och aktiva elevnamn. Översikten ersätter volleybollplansbilden med oavslutade lektionspass som öppnas direkt för fortsatt dokumentation.
 - Excelbladet har högre rubrikrad, radhöjd anpassad till radbrytningar, växlande radbakgrund och grön markering för slutbedömningar.
 - Utvecklarens namn visas i inställningarna.
-- Androidens versionName är 1.3.3 och versionCode 7. APK:n är inte byggd i denna miljö; GitHub Actions-bygget ska köras efter att uppdateringen är inlagd på main och kräver de två befintliga signeringshemligheterna.
+- Androidens versionName är 1.3.4 och versionCode 7. APK:n är inte byggd i denna miljö; GitHub Actions-bygget ska köras efter att uppdateringen är inlagd på main och kräver de två befintliga signeringshemligheterna.
 
 ## Version 1.3.1 – kontrollerat den 26 oktober 2026
 
@@ -81,3 +81,4 @@ Ett manuellt GitHub Actions-bygge har lagts till. Det använder en standardmaski
 Byggfilen har lästs med en YAML-parser och samtliga shellsteg har passerat syntaxkontroll. Manuell start, rättigheter, byggmiljö, versionsreferenser, tidsgräns och lagringstid har kontrollerats. De 15 befintliga testerna passerar även efter förberedelsen. Androidmanifestet och resurserna passerar XML-kontrollen.
 
 GitHubkontot behöver först vara klart och projektet uppladdat till ett privat kodarkiv. Ingen GitHubkörning eller APK har bekräftats i detta förberedelsesteg. En lyckad körning och provning på surfplattan återstår.
+
