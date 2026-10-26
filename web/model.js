@@ -298,4 +298,3 @@ export function demoData(today = dateKey()) {
   data.settings.school = 'Min idrottssal';
   return data;
 }
-
