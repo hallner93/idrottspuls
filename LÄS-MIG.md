@@ -1,13 +1,16 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.3.2.
+En lokal lektionsbok för idrottslärare. Version 1.3.3.
 
-## Nytt i version 1.3.2
+## Nytt i version 1.3.3
 
 - Översikten följer automatiskt enhetens lokala datum och vecka när appen öppnas, återupptas och när dagen byter datum. Manuell bläddring ligger kvar tills du väljer **Till idag**.
 - Välj mellan tio färgteman i **Inställningar**. Originaltemat Skog är kvar som standard.
 - Excel-exporten kan visa en rad per elev med samtliga lektioner samlade i cellerna, eller behålla detaljformatet med en rad per elev och lektion.
 - Markera en lektion som **Slutbedömning**. Markeringen visas i elevens sammanställning och i en egen Excel-kolumn.
+- Sök efter klass eller elev under **Klasser & elever**. En översiktspanel visar också kommande lektionspass som genvägar.
+- Excelrapporten har tydligare radmarkering, läsbara radbrytningar och grön markering för slutbedömningar.
+- Utvecklarens namn finns under **Inställningar → Lagring & app**.
 - Lov och studiedagar påverkas inte av datumväxlingen. Alla uppgifter fortsätter att sparas lokalt.
 
 ## Nytt i version 1.2
