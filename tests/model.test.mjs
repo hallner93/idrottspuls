@@ -29,7 +29,17 @@ test('Unfinished lesson shortcuts include only active sessions, newest first, wi
 test('A student is flagged after three different negative lessons, never after two',()=>{
   const d=fixture();lesson(d,'2026-10-01');lesson(d,'2026-10-02');assert.deepEqual(followup(d,'s1'),{count:2,manual:false,flagged:false});lesson(d,'2026-10-03');assert.equal(followup(d,'s1').flagged,true);
 });
-test('The overview follow-up index matches per-student results without rescanning sessions for every pupil',()=>{\n  const d=fixture();\n  lesson(d,'2026-10-01',{assessments:['below'],grades:[],note:''});\n  lesson(d,'2026-10-02',{assessments:['followup'],grades:[],note:''});\n  const absent=lesson(d,'2026-10-03');absent.attendance.s1.absent=true;\n  const unsaved=lesson(d,'2026-10-04');unsaved.attendanceSavedAt=null;\n  d.classes[0].students[0].followupResetDate='2026-10-01';\n  const indexed=followupSummaries(d);\n  for(const student of d.classes[0].students) assert.deepEqual(indexed.get(student.id),followup(d,student.id));\n});\ntest('F and a negative assessment on the same lesson count once; editing is an upsert',()=>{
+test('The overview follow-up index matches per-student results without rescanning sessions for every pupil',()=>{
+  const d=fixture();
+  lesson(d,'2026-10-01',{assessments:['below'],grades:[],note:''});
+  lesson(d,'2026-10-02',{assessments:['followup'],grades:[],note:''});
+  const absent=lesson(d,'2026-10-03');absent.attendance.s1.absent=true;
+  const unsaved=lesson(d,'2026-10-04');unsaved.attendanceSavedAt=null;
+  d.classes[0].students[0].followupResetDate='2026-10-01';
+  const indexed=followupSummaries(d);
+  for(const student of d.classes[0].students) assert.deepEqual(indexed.get(student.id),followup(d,student.id));
+});
+test('F and a negative assessment on the same lesson count once; editing is an upsert',()=>{
   const d=fixture(),s=lesson(d,'2026-10-01');assert.equal(followup(d,'s1').count,1);s.observations.s1.grade='E';assert.equal(followup(d,'s1').count,1);s.observations.s1.assessment='good';assert.equal(followup(d,'s1').count,0);
 });
 test('All four requested automatic triggers count',()=>{
