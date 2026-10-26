@@ -23,4 +23,3 @@ Skapa gärna en säkerhetskopia i **Export & backup → Skapa säkerhetskopia** 
 Öppna det röda steget i Actions-körningen och läs felmeddelandet. Om bygget saknar signeringsnyckel behöver de två Actions-hemligheterna läggas in. Dela aldrig hemligheternas innehåll eller elevuppgifter i en felrapport.
 
 Byggresultatet sparas i GitHub i sju dagar. En redan installerad app påverkas inte när byggresultatet tas bort.
-
