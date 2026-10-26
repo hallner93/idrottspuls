@@ -1,42 +1,25 @@
-# Bygg den färdiga Androidappen Idrottspuls
+# Bygg och installera Idrottspuls 1.3.1
 
-Projektet bygger en signerad APK med appnamnet **Idrottspuls**. Du behöver inte installera Android Studio. Den färdiga appen fungerar offline och sparar elevuppgifterna lokalt på surfplattan.
+Den signerade Androidappen byggs i GitHub Actions. Appen fungerar offline och elevuppgifterna lagras lokalt på surfplattan.
 
-## 1. Säkerhetskopiera den gamla testappen
+## Bygg en ny APK
 
-Öppna testappen på mobilen eller surfplattan. Gå till **Export & backup → Skapa säkerhetskopia** och spara JSON-filen på en plats du kan hitta igen. Kontrollera att filen finns innan du går vidare. Avinstallera inte testappen än. Den nya appen har en egen lagring; en vanlig installation flyttar inte uppgifterna automatiskt.
+1. Säkerställ att ändringen är inlagd på GitHubs `main`-gren.
+2. Öppna repot och välj **Actions → Bygg Idrottspuls**.
+3. Välj **Run workflow**, välj grenen **main** och starta bygget.
+4. När körningen är grön öppnar du den och hämtar **Idrottspuls-Android-[nummer]** under **Artifacts**.
+5. Packa upp resultatet. Installationsfilen heter `Idrottspuls.apk`. ZIP-filen innehåller även en kort installationsanvisning och kontrollsumma.
 
-## 2. Ladda upp den nya koden
+Bygget kör automatiskt regressionstesterna innan det signerar och verifierar APK-filen. Det behöver de befintliga GitHub Actions-hemligheterna `IDROTTSPULS_KEYSTORE_BASE64` och `IDROTTSPULS_KEYSTORE_PASSWORD`. Om de redan finns behöver du inte ändra dem. Om körningen säger att en hemlighet saknas lägger du in den under **Settings → Secrets and variables → Actions**. Signeringsnyckeln och lösenordet ska aldrig läggas i repot.
 
-Packa upp `Idrottspuls-uppdatering-1.2.zip`. I ditt privata GitHubprojekt, välj **Code → Add file → Upload files**. Dra in de uppackade mapparna `android`, `web`, `tests` och `.github`, samt filen `package.json`, direkt i projektets rot och välj **Commit changes**. Godkänn att befintliga filer ersätts. Mappen `.github` måste ligga på samma nivå som `android` och `web`.
+## Uppdatera appen på surfplattan
 
-Kontrollera sedan under **Code** att `.github/workflows/android-apk.yml` börjar med `name: Bygg Idrottspuls`. Om webbläsaren utelämnade den dolda mappen, öppna den befintliga filen på GitHub, välj pennan **Edit this file** och ersätt innehållet med filen från paketet. Spara ändringen.
+Behåll appen installerad och öppna APK-filen på surfplattan. Version 1.3.1 använder samma app-id, `se.idrottspuls.app`, och den permanenta signeringsnyckeln. Android installerar den som en uppdatering och behåller då appens lokalt sparade uppgifter. Avinstallera inte appen och välj inte **Rensa lagring**.
 
-## 3. Lägg in signeringsnyckeln som två hemligheter
+Skapa gärna en säkerhetskopia i **Export & backup → Skapa säkerhetskopia** före större uppdateringar och kontrollera efter installationen att dina klasser och lektioner finns kvar. Säkerhetskopian innehåller elevuppgifter; välj en lagringsplats som skolan godkänner.
 
-Tre privata filer ligger **utanför källkodspaketet**:
+## Om bygget misslyckas
 
-- `Idrottspuls-signering.jks` är originalnyckeln.
-- `Idrottspuls-signering-base64.txt` är samma nyckel i textform för GitHub.
-- `Idrottspuls-signering-losenord.txt` innehåller nyckelns lösenord.
+Öppna det röda steget i Actions-körningen och läs felmeddelandet. Om bygget saknar signeringsnyckel behöver de två Actions-hemligheterna läggas in. Dela aldrig hemligheternas innehåll eller elevuppgifter i en felrapport.
 
-Öppna GitHubprojektets **Settings → Secrets and variables → Actions → New repository secret**. Skapa dessa två hemligheter:
-
-| Name | Secret |
-| --- | --- |
-| `IDROTTSPULS_KEYSTORE_BASE64` | Hela innehållet i `Idrottspuls-signering-base64.txt` |
-| `IDROTTSPULS_KEYSTORE_PASSWORD` | Hela innehållet i `Idrottspuls-signering-losenord.txt` |
-
-Kopiera bara innehållet till **Secret**. Ladda aldrig upp någon av de tre privata filerna under **Code**. Spara originalnyckeln och lösenordet på en trygg plats som du själv kontrollerar, helst också som separat säkerhetskopia på din privata dator. Samma nyckel krävs för att nya versioner ska kunna installeras som uppdateringar utan att appens lokala data raderas.
-
-## 4. Bygg och installera
-
-Öppna **Actions → Bygg Idrottspuls → Run workflow**. Vänta tills körningen är grön. Längst ner på körningens sida hämtar du **Idrottspuls-Android-[nummer]** under **Artifacts**. Packa upp filen och flytta `Idrottspuls.apk` till surfplattan. Öppna APK-filen där och installera.
-
-Den färdiga appen heter **Idrottspuls** och kan finnas bredvid testappen tills överföringen är klar. Öppna **Idrottspuls → Export & backup → Återställ säkerhetskopia** och välj JSON-filen från steg 1. Kontrollera att klasser, lektioner och observationer finns där. Först därefter kan du ta bort testappen.
-
-Om bygget blir rött, öppna det felande steget och dela feltexten här. Dela aldrig innehållet i de privata signeringsfilerna eller elevuppgifter i felrapporten.
-
-## Senare uppdateringar
-
-Behåll samma app-id `se.idrottspuls.app` och samma signeringsnyckel. Höj `versionCode` i `android/app/build.gradle` för varje ny APK. Ta en säkerhetskopia i appen före uppdatering. Installera den nya signerade APK:n ovanpå Idrottspuls. Byggresultatet på GitHub sparas i sju dagar, men den installerade appen och dess lokala data påverkas inte när resultatet försvinner.
+Byggresultatet sparas i GitHub i sju dagar. En redan installerad app påverkas inte när byggresultatet tas bort.
