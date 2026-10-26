@@ -18,8 +18,16 @@ export function dateKey(date = new Date()) {
 export const parseDate = value => new Date(`${value}T12:00:00`);
 export function addDays(value, count) { const d = parseDate(value); d.setDate(d.getDate() + count); return dateKey(d); }
 export function termStart(today = dateKey()) { return `${today.slice(0, 4)}-${today.slice(5, 7) >= '08' ? '08' : '01'}-01`; }
+export function termInfo(date) {
+  const year=Number(date.slice(0,4)),month=Number(date.slice(5,7)),semester=month>=8?'HT':'VT',schoolYear=month>=8?year:year-1;
+  return {semester,schoolYear,label:`${semester} ${schoolYear}/${schoolYear+1}`};
+}
+export function nextTermStart(date) {
+  const current=termInfo(date),nextYear=current.semester==='HT'?current.schoolYear+1:current.schoolYear;
+  return current.semester==='HT'?`${nextYear}-01-01`:`${nextYear}-08-01`;
+}
 export function emptyData() {
-  return { classes: [], schedules: [], sessions: [], breaks: [], lessonPlans: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green' } };
+  return { classes: [], schedules: [], sessions: [], breaks: [], lessonPlans: [], termArchives: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green' } };
 }
 export const studentName = s => `${s.first} ${s.last}`.trim();
 export function searchClasses(classes, query = '') {
@@ -291,6 +299,14 @@ export function validateData(data) {
       plans.add(key);
     }
   }
+  if (data.termArchives !== undefined) {
+    assert(Array.isArray(data.termArchives) && data.termArchives.length <= 100, 'fel i terminsarkivet.');
+    const archiveIds=new Set();
+    for (const archive of data.termArchives) {
+      assert(isObj(archive) && isText(archive.id,100) && archive.id && !archiveIds.has(archive.id) && isText(archive.label,40) && archive.label && isDate(archive.termStart) && isText(archive.archivedAt,40) && !Number.isNaN(Date.parse(archive.archivedAt)) && ['real','demo'].includes(archive.mode) && isObj(archive.data) && archive.data.termArchives === undefined, 'ogiltigt terminsarkiv.');
+      archiveIds.add(archive.id);validateData(archive.data);
+    }
+  }
   for (const s of data.schedules) { assert(isText(s.id, 100) && !scheduleIds.has(s.id) && classIds.has(s.classId) && Number.isInteger(s.day) && s.day >= 0 && s.day <= 6 && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.location, 200) && isText(s.topic, 200), 'fel i veckoschemat.'); scheduleIds.add(s.id); }
   const lessonKeys = new Set();
   for (const s of data.sessions) {
@@ -319,6 +335,7 @@ export function upgradeData(data) {
   const upgraded = clone(data);
   upgraded.breaks ??= [];
   upgraded.lessonPlans ??= [];
+  upgraded.termArchives ??= [];
   for (const c of upgraded.classes) c.yearGroup ??= null;
   upgraded.settings.theme ??= 'green';
   for (const session of upgraded.sessions) session.finalAssessment ??= false;
@@ -327,6 +344,21 @@ export function upgradeData(data) {
     session.observations[id] = { ...rest, assessments: observationAssessments(o), grades: observationGrades(o) };
   }
   return upgraded;
+}
+export function transitionTerm(data, nextStart, mode = 'real', archivedAt = new Date().toISOString()) {
+  validateData(data);
+  if (!isDate(nextStart)) throw new Error('Välj ett giltigt startdatum för nästa termin.');
+  const current=termInfo(data.settings.termStart),target=termInfo(nextStart),expected=nextTermStart(data.settings.termStart);
+  if (target.semester===current.semester || target.schoolYear!==termInfo(expected).schoolYear || nextStart<=data.settings.termStart) throw new Error('Startdatumet måste ligga i nästa termin.');
+  if (!['real','demo'].includes(mode) || !isText(archivedAt,40) || Number.isNaN(Date.parse(archivedAt))) throw new Error('Terminsbytet kunde inte valideras.');
+  const archives=[...(data.termArchives||[])];
+  if (archives.length>=100) throw new Error('Terminsarkivet är fullt. Skapa en säkerhetskopia innan du fortsätter.');
+  const snapshot=clone(data);delete snapshot.termArchives;
+  const archive={id:uid(),label:current.label,termStart:data.settings.termStart,archivedAt,mode,data:snapshot};
+  archives.push(archive);
+  data.termArchives=archives;data.sessions=[];data.lessonPlans=[];data.breaks=[];data.settings.termStart=nextStart;
+  for (const student of data.classes.flatMap(c=>c.students)) delete student.followupResetDate;
+  return archive;
 }
 export function upgradeWorkspace(envelope) {
   if (!isObj(envelope) || ![1, SCHEMA].includes(envelope.schemaVersion) || !['real','demo'].includes(envelope.active)) throw new Error('Dataversionen kan inte öppnas. Uppgifterna har inte skrivits över.');

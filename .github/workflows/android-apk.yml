@@ -79,7 +79,7 @@ jobs:
           "$apksigner" verify "$apk"
           mkdir -p build-result
           cp "$apk" build-result/Idrottspuls.apk
-          printf '%s\n' 'Idrottspuls 1.4.0' '' 'Installationsfil: Idrottspuls.apk' 'Kräver Android 8.0 eller senare.' '' 'Spara en säkerhetskopia i appen före uppdatering.' 'Installera APK-filen ovanpå den befintliga Idrottspulsappen.' 'Samma permanenta signeringsnyckel används för framtida uppdateringar.' > build-result/LAS-MIG.txt
+          printf '%s\n' 'Idrottspuls 1.5.0' '' 'Installationsfil: Idrottspuls.apk' 'Kräver Android 8.0 eller senare.' '' 'Spara en säkerhetskopia i appen före uppdatering.' 'Installera APK-filen ovanpå den befintliga Idrottspulsappen.' 'Samma permanenta signeringsnyckel används för framtida uppdateringar.' > build-result/LAS-MIG.txt
           (cd build-result && sha256sum Idrottspuls.apk > SHA256SUMS.txt)
 
       - name: Lägg installationsfilen bland byggresultaten
