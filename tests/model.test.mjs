@@ -61,7 +61,7 @@ test('Term break archives the full previous term and starts clean tracking for t
   d.schedules=[{id:'mon',classId:'c1',day:1,start:'08:00',end:'09:00',topic:'Volleyboll',location:'Hall'}];
   d.breaks=[{id:'autumn',start:'2026-10-26',end:'2026-10-30',label:'Höstlov'}];setLessonPlan(d,7,'2026-10-26',1,'Serv');
   const saved=lesson(d,'2026-10-26');
-  assert.equal(termInfo(d.settings.termStart).label,'HT 2026/2027');assert.equal(nextTermStart(d.settings.termStart),'2027-01-01');
+  assert.equal(termInfo(d.settings.termStart).label,'HT 2026/2027');assert.equal(termInfo('2026-07-01').label,'VT 2025/2026');assert.equal(nextTermStart(d.settings.termStart),'2027-01-01');
   const archive=transitionTerm(d,'2027-01-11','real','2027-01-11T08:00:00.000Z');
   assert.equal(archive.label,'HT 2026/2027');assert.equal(archive.data.sessions[0].id,saved.id);assert.equal(archive.data.breaks[0].label,'Höstlov');assert.equal(archive.data.lessonPlans[0].topic,'Serv');
   assert.equal(archive.data.termArchives,undefined);assert.equal(d.termArchives.length,1);assert.equal(d.termArchives[0].mode,'real');
