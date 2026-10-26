@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -55,6 +55,23 @@ test('The term week list follows the configured term start and marks full and pa
   assert.deepEqual(weeks.map(w=>w.weekStart),['2026-10-26','2026-11-02','2026-11-09']);
   assert.deepEqual(planWeekStatus(d,7,'2026-10-26'),{scheduledCount:3,activeCount:2,affectedCount:1,excluded:false});
   assert.equal(weeks[1].excluded,true);assert.equal(weeks[1].activeCount,0);assert.equal(weeks[2].excluded,false);
+});
+test('Term break archives the full previous term and starts clean tracking for the next term',()=>{
+  const d=fixture();d.classes[0].yearGroup=7;d.classes[0].students[0].followupResetDate='2026-09-15';
+  d.schedules=[{id:'mon',classId:'c1',day:1,start:'08:00',end:'09:00',topic:'Volleyboll',location:'Hall'}];
+  d.breaks=[{id:'autumn',start:'2026-10-26',end:'2026-10-30',label:'Höstlov'}];setLessonPlan(d,7,'2026-10-26',1,'Serv');
+  const saved=lesson(d,'2026-10-26');
+  assert.equal(termInfo(d.settings.termStart).label,'HT 2026/2027');assert.equal(nextTermStart(d.settings.termStart),'2027-01-01');
+  const archive=transitionTerm(d,'2027-01-11','real','2027-01-11T08:00:00.000Z');
+  assert.equal(archive.label,'HT 2026/2027');assert.equal(archive.data.sessions[0].id,saved.id);assert.equal(archive.data.breaks[0].label,'Höstlov');assert.equal(archive.data.lessonPlans[0].topic,'Serv');
+  assert.equal(archive.data.termArchives,undefined);assert.equal(d.termArchives.length,1);assert.equal(d.termArchives[0].mode,'real');
+  assert.deepEqual(d.sessions,[]);assert.deepEqual(d.breaks,[]);assert.deepEqual(d.lessonPlans,[]);assert.equal(d.settings.termStart,'2027-01-11');
+  assert.equal(d.classes[0].students[0].id,'s1');assert.equal(d.classes[0].students[0].followupResetDate,undefined);assert.equal(d.schedules[0].id,'mon');
+  assert.doesNotThrow(()=>validateData(d));
+  assert.equal(parseBackup(JSON.stringify({app:'Idrottspuls',schemaVersion:SCHEMA,mode:'real',data:d})).data.termArchives[0].data.sessions.length,1);
+});
+test('Term break rejects a same-semester date without changing any records',()=>{
+  const d=fixture(),before=structuredClone(d);assert.throws(()=>transitionTerm(d,'2026-10-01'),/nästa termin/);assert.deepEqual(d,before);
 });
 test('Copying a weekly plan replaces only the selected year groups and keeps plans separate by week',()=>{
   const d=fixture();setLessonPlan(d,7,'2026-10-26',1,'Volleyboll');setLessonPlan(d,7,'2026-10-26',2,'Rörelse');
