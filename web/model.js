@@ -128,6 +128,19 @@ export function copyLessonPlanWeek(data, sourceYearGroup, targetYearGroups, week
 function isValidWeekStart(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && dateKey(parseDate(value)) === value && parseDate(value).getDay() === 1;
 }
+export function planWeekStatus(data, yearGroup, weekStart) {
+  const classes = data.classes.filter(c => Number(c.yearGroup) === Number(yearGroup));
+  const scheduledDates = classes.flatMap(c => data.schedules.filter(s => s.classId === c.id).map(s => addDays(weekStart, (s.day + 6) % 7)));
+  const activeCount = scheduledDates.filter(date => !scheduleBreakForDate(data, date)).length;
+  return { scheduledCount: scheduledDates.length, activeCount, affectedCount: scheduledDates.length - activeCount, excluded: scheduledDates.length > 0 && activeCount === 0 };
+}
+export function termPlanWeeks(data, yearGroup, termStart, count = 24) {
+  const start = weekStartDate(termStart), weeks = Math.max(1, Math.min(52, Number(count) || 24));
+  return Array.from({ length: weeks }, (_, index) => {
+    const weekStart = addDays(start, index * 7);
+    return { weekStart, ...planWeekStatus(data, yearGroup, weekStart) };
+  });
+}
 export function lessonsForDate(data, date) {
   const day = parseDate(date).getDay();
   // Only suppress unsaved recurring lessons; existing and one-off lessons remain available.
