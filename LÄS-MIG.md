@@ -7,6 +7,7 @@ En lokal lektionsbok för idrottslärare. Version 1.3.1.
 - Översikten följer automatiskt enhetens lokala datum och vecka när appen öppnas, återupptas och när dagen byter datum. Manuell bläddring ligger kvar tills du väljer **Till idag**.
 - Välj mellan tio färgteman i **Inställningar**. Originaltemat Skog är kvar som standard.
 - Excel-exporten kan visa en rad per elev med samtliga lektioner samlade i cellerna, eller behålla detaljformatet med en rad per elev och lektion.
+- Markera en lektion som **Slutbedömning**. Markeringen visas i elevens sammanställning och i en egen Excel-kolumn.
 - Lov och studiedagar påverkas inte av datumväxlingen. Alla uppgifter fortsätter att sparas lokalt.
 
 ## Nytt i version 1.2

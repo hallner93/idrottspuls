@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -54,6 +54,19 @@ test('Student overview export includes each pupil once and keeps lesson values a
   assert.deepEqual(rows.find(row=>row[0]==='Åsa'),['Åsa','Öberg','2026-10-01\n2026-10-08','Bra\nOkej','B\nC','Bra passning ↵ Löpning\nSamarbete']);
   assert.deepEqual(rows.find(row=>row[0]==='Amir'),['Amir','Andersson','2026-10-01\n2026-10-08','Ej observerad\nEj observerad','–\n–','–\n–']);
   assert.equal(exportRows(d,{},['first']).length,5,'lesson detail export remains available');
+});
+test('Final assessment is stored per lesson, appears in both Excel layouts and each participating pupil summary',()=>{
+  const d=fixture(),first=lesson(d,'2026-10-01'),second=lesson(d,'2026-10-08');second.finalAssessment=true;
+  assert.equal(first.finalAssessment,false);
+  assert.deepEqual(studentFinalAssessments(d,'s1'),[second]);
+  assert.deepEqual(studentFinalAssessments(d,'s2'),[second]);
+  assert.deepEqual(exportRows(d,{},['first','date','finalAssessment']).filter(row=>row[0]==='Åsa'),[['Åsa','2026-10-01','Nej'],['Åsa','2026-10-08','Ja']]);
+  assert.deepEqual(exportRowsByStudent(d,{},['first','date','finalAssessment']).find(row=>row[0]==='Åsa'),['Åsa','2026-10-01\n2026-10-08','Nej\nJa']);
+});
+test('Older lesson records migrate to an unmarked final-assessment value and invalid values are rejected',()=>{
+  const d=fixture(),session=lesson(d,'2026-10-01');delete session.finalAssessment;
+  assert.equal(upgradeData(d).sessions[0].finalAssessment,false);
+  d.sessions[0].finalAssessment='yes';assert.throws(()=>validateData(d));
 });
 test('Excel wraps the multiline cells used by the one-row-per-student export',()=>{
   const xml=new TextDecoder().decode(createXlsx([['Elev','Datum','Observation'],['Åsa','2026-10-01\n2026-10-08','Bra\nOkej']]));

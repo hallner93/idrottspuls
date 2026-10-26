@@ -106,7 +106,7 @@ export function lessonsForDate(data, date) {
 export function materialize(data, lesson) {
   if (!lesson.planned) return lesson;
   const students = roster(data, lesson.classId);
-  const session = { id: uid(), classId: lesson.classId, className: data.classes.find(c => c.id === lesson.classId)?.name || '', scheduleId: lesson.scheduleId, date: lesson.date, start: lesson.start, end: lesson.end, location: lesson.location, topic: lesson.topic || '', studentIds: students.map(s => s.id), studentNames: Object.fromEntries(students.map(s => [s.id, { first: s.first, last: s.last }])), attendance: {}, attendanceDraft: null, attendanceSavedAt: null, observations: {}, skipObservation: false, complete: false };
+  const session = { id: uid(), classId: lesson.classId, className: data.classes.find(c => c.id === lesson.classId)?.name || '', scheduleId: lesson.scheduleId, date: lesson.date, start: lesson.start, end: lesson.end, location: lesson.location, topic: lesson.topic || '', studentIds: students.map(s => s.id), studentNames: Object.fromEntries(students.map(s => [s.id, { first: s.first, last: s.last }])), attendance: {}, attendanceDraft: null, attendanceSavedAt: null, observations: {}, skipObservation: false, finalAssessment: false, complete: false };
   data.sessions.push(session);
   return session;
 }
@@ -126,6 +126,9 @@ export function flaggedStudents(data) {
 export function filteredSessions(data, filters = {}) {
   return data.sessions.filter(s => s.attendanceSavedAt && (!filters.classId || s.classId === filters.classId) && (!filters.from || s.date >= filters.from) && (!filters.to || s.date <= filters.to)).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start));
 }
+export function studentFinalAssessments(data, studentId, sessions = filteredSessions(data, {})) {
+  return sessions.filter(session => session.finalAssessment && session.studentIds.includes(studentId));
+}
 export function reportedLessons(sessions, now = new Date()) {
   const today = dateKey(now), time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   return sessions.filter(s => s.attendanceSavedAt && (s.date < today || (s.date === today && s.end <= time)));
@@ -142,12 +145,12 @@ export function studentStats(data, student, sessions, now = new Date()) {
   return { total: relevant.length, present: attended.length, absent, clothes, shoes, absentRate: percent(absent), clothesRate: percent(clothes), shoesRate: percent(shoes), late: a.filter(a => a.lateMinutes > 0).length, minutes: a.reduce((n, a) => n + (a.lateMinutes || 0), 0), rate: percent(attended.length), observationEligible: observationEligible.length, observed: observed.length, latest: observed[0]?.observations[student.id] || null, negative: observed.filter(s => negative(s.observations[student.id])).length, ...followup(data, student.id) };
 }
 export const EXPORT_FIELDS = [
-  ['first', 'Förnamn'], ['last', 'Efternamn'], ['class', 'Klass'], ['date', 'Datum'], ['time', 'Tid'], ['topic', 'Arbetsområde'], ['attendance', 'Närvaro'], ['clothes', 'Glömt kläder'], ['shoes', 'Glömt skor'], ['late', 'Sen ankomst (min)'], ['assessment', 'Observation'], ['grade', 'Lektionsbedömning'], ['note', 'Anteckning'], ['followup', 'Behov av uppföljning'],
+  ['first', 'Förnamn'], ['last', 'Efternamn'], ['class', 'Klass'], ['date', 'Datum'], ['time', 'Tid'], ['topic', 'Arbetsområde'], ['finalAssessment', 'Slutbedömning'], ['attendance', 'Närvaro'], ['clothes', 'Glömt kläder'], ['shoes', 'Glömt skor'], ['late', 'Sen ankomst (min)'], ['assessment', 'Observation'], ['grade', 'Lektionsbedömning'], ['note', 'Anteckning'], ['followup', 'Behov av uppföljning'],
 ];
 function exportValues(data, session, student) {
   const a = session.attendance[student.id] || blankAttendance();
   const o = session.skipObservation || a.absent ? {} : session.observations[student.id] || {};
-  return { first: student.first, last: student.last, class: session.className || data.classes.find(c => c.id === session.classId)?.name || '', date: session.date, time: `${session.start}–${session.end}`, topic: session.topic || '', attendance: a.absent ? 'Frånvarande' : 'Närvarande', clothes: a.clothes ? 'Ja' : 'Nej', shoes: a.shoes ? 'Ja' : 'Nej', late: a.lateMinutes || 0, assessment: session.skipObservation ? 'Observation avstådd' : a.absent ? 'Frånvarande' : !hasObservation(o) ? 'Ej observerad' : observationLabel(o, '; ') || 'Ingen observationsmarkering', grade: gradeLabel(o), note: o.note || '', followup: followup(data, student.id).flagged ? 'Ja' : 'Nej' };
+  return { first: student.first, last: student.last, class: session.className || data.classes.find(c => c.id === session.classId)?.name || '', date: session.date, time: `${session.start}–${session.end}`, topic: session.topic || '', finalAssessment: session.finalAssessment ? 'Ja' : 'Nej', attendance: a.absent ? 'Frånvarande' : 'Närvarande', clothes: a.clothes ? 'Ja' : 'Nej', shoes: a.shoes ? 'Ja' : 'Nej', late: a.lateMinutes || 0, assessment: session.skipObservation ? 'Observation avstådd' : a.absent ? 'Frånvarande' : !hasObservation(o) ? 'Ej observerad' : observationLabel(o, '; ') || 'Ingen observationsmarkering', grade: gradeLabel(o), note: o.note || '', followup: followup(data, student.id).flagged ? 'Ja' : 'Nej' };
 }
 export function exportRows(data, filters, selected) {
   const rows = [selected.map(key => EXPORT_FIELDS.find(f => f[0] === key)[1])];
@@ -197,7 +200,7 @@ export function validateData(data) {
   for (const s of data.schedules) { assert(isText(s.id, 100) && !scheduleIds.has(s.id) && classIds.has(s.classId) && Number.isInteger(s.day) && s.day >= 0 && s.day <= 6 && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.location, 200) && isText(s.topic, 200), 'fel i veckoschemat.'); scheduleIds.add(s.id); }
   const lessonKeys = new Set();
   for (const s of data.sessions) {
-    assert(isText(s.id, 100) && !sessionIds.has(s.id) && classIds.has(s.classId) && isDate(s.date) && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.topic, 200) && isText(s.location, 200) && typeof s.skipObservation === 'boolean' && typeof s.complete === 'boolean', 'fel i en lektion.'); sessionIds.add(s.id);
+    assert(isText(s.id, 100) && !sessionIds.has(s.id) && classIds.has(s.classId) && isDate(s.date) && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.topic, 200) && isText(s.location, 200) && typeof s.skipObservation === 'boolean' && typeof s.complete === 'boolean' && (s.finalAssessment === undefined || typeof s.finalAssessment === 'boolean'), 'fel i en lektion.'); sessionIds.add(s.id);
     assert(Array.isArray(s.studentIds) && s.studentIds.length <= 500 && new Set(s.studentIds).size === s.studentIds.length && isObj(s.studentNames) && isObj(s.attendance) && isObj(s.observations), 'fel i lektionslistan.');
     const members = data.classes.find(c => c.id === s.classId).students;
     assert(s.studentIds.every(id => members.some(m => m.id === id) && isObj(s.studentNames[id]) && isText(s.studentNames[id].first, 100) && isText(s.studentNames[id].last, 100)), 'felaktig koppling mellan elev och klass.');
@@ -222,6 +225,7 @@ export function upgradeData(data) {
   const upgraded = clone(data);
   upgraded.breaks ??= [];
   upgraded.settings.theme ??= 'green';
+  for (const session of upgraded.sessions) session.finalAssessment ??= false;
   for (const session of upgraded.sessions) for (const [id, o] of Object.entries(session.observations)) {
     const { assessment, grade, ...rest } = o;
     session.observations[id] = { ...rest, assessments: observationAssessments(o), grades: observationGrades(o) };
