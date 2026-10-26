@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -13,6 +13,13 @@ function lesson(data,date,observation={grade:'F',assessment:'below',note:''}) {
   const s=materialize(data,{planned:true,classId:'c1',scheduleId:null,date,start:'08:00',end:'09:00',topic:'Volleyboll',location:'Hallen'});
   s.attendance=Object.fromEntries(s.studentIds.map(id=>[id,blankAttendance()]));s.attendanceSavedAt=`${date}T10:00:00Z`;s.observations.s1=observation;return s;
 }
+test('Class search matches class and active student names case-insensitively',()=>{
+  const classes=[{name:'7A',students:[{first:'Åsa',last:'Öberg',archived:false},{first:'Nils',last:'Test',archived:true}]},{name:'8B',students:[{first:'Amir',last:'Andersson',archived:false}]}];
+  assert.deepEqual(searchClasses(classes,'7a'),[classes[0]]);
+  assert.deepEqual(searchClasses(classes,'åsa'),[classes[0]]);
+  assert.deepEqual(searchClasses(classes,'Nils'),[]);
+  assert.deepEqual(searchClasses(classes,''),classes);
+});
 test('A student is flagged after three different negative lessons, never after two',()=>{
   const d=fixture();lesson(d,'2026-10-01');lesson(d,'2026-10-02');assert.deepEqual(followup(d,'s1'),{count:2,manual:false,flagged:false});lesson(d,'2026-10-03');assert.equal(followup(d,'s1').flagged,true);
 });
@@ -72,6 +79,15 @@ test('Excel wraps the multiline cells used by the one-row-per-student export',()
   const xml=new TextDecoder().decode(createXlsx([['Elev','Datum','Observation'],['Åsa','2026-10-01\n2026-10-08','Bra\nOkej']]));
   assert.match(xml,/<c r="B2" s="2"/);
   assert.match(xml,/wrapText="1"/);
+  assert.match(xml,/<row r="2" ht="35" customHeight="1">/);
+  assert.match(xml,/<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"\/>/);
+});
+test('Excel highlights final assessments and freezes the pupil identity columns',()=>{
+  const xml=new TextDecoder().decode(createXlsx([['Förnamn','Efternamn','Klass','Slutbedömning'],['Åsa','Öberg','7A','Ja'],['Amir','Andersson','7A','Nej']]));
+  assert.match(xml,/<c r="D2" s="5"/);
+  assert.match(xml,/<c r="D3" s="4"/);
+  assert.match(xml,/fgColor rgb="FFE7F3EA"/);
+  assert.match(xml,/<pane xSplit="3" ySplit="1" topLeftCell="D2" activePane="bottomRight" state="frozen"\/>/);
 });
 test('Backup round trips preserve local drafts and data',()=>{
   const d=fixture(),s=lesson(d,'2026-10-01');s.attendanceDraft={s1:{...blankAttendance(),lateMinutes:4}};const text=JSON.stringify({app:'Idrottspuls',schemaVersion:1,mode:'real',data:d});assert.deepEqual(parseBackup(text).data,upgradeData(d));assert.doesNotThrow(()=>validateData(demoData('2026-10-20')));
