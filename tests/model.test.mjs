@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -25,6 +25,46 @@ test('Unfinished lesson shortcuts include only active sessions, newest first, wi
   finished.complete=true;
   assert.deepEqual(unfinishedSessions(d).map(s=>s.id),[newer.id,older.id]);
   assert.deepEqual(unfinishedSessions(d,1).map(s=>s.id),[newer.id]);
+});
+test('Weekly lesson plans follow the class year group and the three scheduled lessons in week order',()=>{
+  const d=fixture();d.classes[0].yearGroup=7;
+  d.schedules=[
+    {id:'fri',classId:'c1',day:5,start:'09:00',end:'10:00',location:'Hall',topic:'Ordinarie fredag'},
+    {id:'mon',classId:'c1',day:1,start:'08:00',end:'09:00',location:'Hall',topic:'Ordinarie måndag'},
+    {id:'wed',classId:'c1',day:3,start:'10:00',end:'11:00',location:'Hall',topic:'Ordinarie onsdag'},
+  ];
+  assert.equal(weekStartDate('2026-10-28'),'2026-10-26');
+  assert.deepEqual(['mon','wed','fri'].map(id=>schedulePlanSlot(d,'c1',id)),[1,2,3]);
+  setLessonPlan(d,7,'2026-10-26',1,'Volleyboll: fingerslag');
+  setLessonPlan(d,7,'2026-10-26',2,'Styrka: cirkelträning');
+  setLessonPlan(d,7,'2026-10-26',3,'Orientering');
+  assert.equal(lessonsForDate(d,'2026-10-26')[0].topic,'Volleyboll: fingerslag');
+  assert.equal(lessonsForDate(d,'2026-10-28')[0].topic,'Styrka: cirkelträning');
+  const friday=materialize(d,lessonsForDate(d,'2026-10-30')[0]);
+  assert.equal(friday.topic,'Orientering');
+  friday.topic='Orientering utomhus';
+  setLessonPlan(d,7,'2026-10-26',3,'Balans');
+  assert.equal(lessonsForDate(d,'2026-10-30')[0].topic,'Orientering utomhus','a started lesson keeps its editable topic');
+  assert.equal(lessonPlan(d,7,'2026-10-26',3).topic,'Balans','changing a lesson does not edit the shared plan');
+});
+test('The term week list follows the configured term start and marks full and partial breaks',()=>{
+  const d=fixture();d.classes[0].yearGroup=7;
+  d.schedules=[{id:'mon',classId:'c1',day:1,start:'08:00',end:'09:00'},{id:'wed',classId:'c1',day:3,start:'08:00',end:'09:00'},{id:'fri',classId:'c1',day:5,start:'08:00',end:'09:00'}];
+  d.settings.termStart='2026-10-28';d.breaks=[{id:'study',start:'2026-10-26',end:'2026-10-26',label:'Studiedag'},{id:'holiday',start:'2026-11-02',end:'2026-11-08',label:'Höstlov'}];
+  const weeks=termPlanWeeks(d,7,d.settings.termStart,3);
+  assert.deepEqual(weeks.map(w=>w.weekStart),['2026-10-26','2026-11-02','2026-11-09']);
+  assert.deepEqual(planWeekStatus(d,7,'2026-10-26'),{scheduledCount:3,activeCount:2,affectedCount:1,excluded:false});
+  assert.equal(weeks[1].excluded,true);assert.equal(weeks[1].activeCount,0);assert.equal(weeks[2].excluded,false);
+});
+test('Copying a weekly plan replaces only the selected year groups and keeps plans separate by week',()=>{
+  const d=fixture();setLessonPlan(d,7,'2026-10-26',1,'Volleyboll');setLessonPlan(d,7,'2026-10-26',2,'Rörelse');
+  setLessonPlan(d,8,'2026-10-26',1,'Gammal plan');setLessonPlan(d,9,'2026-10-26',1,'Behåll år 9');setLessonPlan(d,8,'2026-11-02',1,'Nästa vecka');
+  assert.deepEqual(copyLessonPlanWeek(d,7,[8],'2026-10-26'),[8]);
+  assert.equal(lessonPlan(d,8,'2026-10-26',1).topic,'Volleyboll');
+  assert.equal(lessonPlan(d,8,'2026-10-26',2).topic,'Rörelse');
+  assert.equal(lessonPlan(d,9,'2026-10-26',1).topic,'Behåll år 9');
+  assert.equal(lessonPlan(d,8,'2026-11-02',1).topic,'Nästa vecka');
+  assert.doesNotThrow(()=>validateData(d));
 });
 test('A student is flagged after three different negative lessons, never after two',()=>{
   const d=fixture();lesson(d,'2026-10-01');lesson(d,'2026-10-02');assert.deepEqual(followup(d,'s1'),{count:2,manual:false,flagged:false});lesson(d,'2026-10-03');assert.equal(followup(d,'s1').flagged,true);
@@ -181,9 +221,17 @@ test('Old on-device workspaces and backups migrate without losing history or dra
   assert.equal(upgraded.real.classes[0].students[0].followupResetDate,'2026-09-30');assert.deepEqual(d,original);
   assert.deepEqual(upgradeWorkspace(upgraded),upgraded);
 });
+test('Older classes gain an unassigned year group and an empty planning calendar',()=>{
+  const d=fixture(),original=structuredClone(d),old=structuredClone(d);delete old.classes[0].yearGroup;delete old.lessonPlans;
+  const upgraded=upgradeData(old);
+  assert.equal(upgraded.classes[0].yearGroup,null);assert.deepEqual(upgraded.lessonPlans,[]);
+  assert.deepEqual(d,original,'migration does not mutate the saved source object');
+  upgraded.classes[0].yearGroup=10;assert.throws(()=>validateData(upgraded),/årskurs/);
+  upgraded.classes[0].yearGroup=7;upgraded.lessonPlans=[{yearGroup:7,weekStart:'2026-10-27',slot:1,topic:'Fel veckodag'}];assert.throws(()=>validateData(upgraded),/planering/);
+});
 
 test('New backup round trips keep all selections, and invalid arrays are rejected',()=>{
-  const d=fixture();const s=lesson(d,'2026-10-01',{assessments:['followup','good','okay'],grades:['E','C'],note:'Alla val'});
+  const d=fixture();d.classes[0].yearGroup=7;const s=lesson(d,'2026-10-01',{assessments:['followup','good','okay'],grades:['E','C'],note:'Alla val'});
   const backup=()=>JSON.stringify({app:'Idrottspuls',schemaVersion:SCHEMA,mode:'real',data:d});
   assert.deepEqual(parseBackup(backup()).data,d);
   for(const invalid of [ ['A','B','C'], ['C','C'], ['Z'], 'C', null ]) {s.observations.s1.grades=invalid;assert.throws(()=>parseBackup(backup()));}

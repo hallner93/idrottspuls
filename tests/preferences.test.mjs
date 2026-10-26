@@ -60,7 +60,7 @@ test('older local workspaces gain the default theme without changing lessons or 
   delete original.settings.theme;
   const upgraded = upgradeData(original);
   assert.equal(upgraded.settings.theme, 'green');
-  assert.deepEqual(upgraded.classes, original.classes);
+  assert.deepEqual(upgraded.classes, original.classes.map(c => ({ ...c, yearGroup: null })));
   assert.deepEqual(upgraded.sessions, original.sessions);
   assert.equal(original.settings.theme, undefined);
 });

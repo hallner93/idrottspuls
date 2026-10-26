@@ -19,7 +19,7 @@ export const parseDate = value => new Date(`${value}T12:00:00`);
 export function addDays(value, count) { const d = parseDate(value); d.setDate(d.getDate() + count); return dateKey(d); }
 export function termStart(today = dateKey()) { return `${today.slice(0, 4)}-${today.slice(5, 7) >= '08' ? '08' : '01'}-01`; }
 export function emptyData() {
-  return { classes: [], schedules: [], sessions: [], breaks: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green' } };
+  return { classes: [], schedules: [], sessions: [], breaks: [], lessonPlans: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green' } };
 }
 export const studentName = s => `${s.first} ${s.last}`.trim();
 export function searchClasses(classes, query = '') {
@@ -96,13 +96,62 @@ export function sessionStudents(data, session) {
 export function scheduleBreakForDate(data, date) {
   return (data.breaks || []).find(b => b.start <= date && date <= b.end) || null;
 }
+export function weekStartDate(date) {
+  const day = parseDate(date).getDay();
+  return addDays(date, 1 - (day || 7));
+}
+export function schedulePlanSlot(data, classId, scheduleId) {
+  const ordered = data.schedules.filter(s => s.classId === classId).sort((a, b) => ((a.day + 6) % 7) - ((b.day + 6) % 7) || a.start.localeCompare(b.start) || a.id.localeCompare(b.id));
+  const index = ordered.findIndex(s => s.id === scheduleId);
+  return index >= 0 && index < 3 ? index + 1 : null;
+}
+export function lessonPlan(data, yearGroup, weekStart, slot) {
+  return (data.lessonPlans || []).find(p => p.yearGroup === Number(yearGroup) && p.weekStart === weekStart && p.slot === Number(slot)) || null;
+}
+export function setLessonPlan(data, yearGroup, weekStart, slot, topic) {
+  const grade = Number(yearGroup), lesson = Number(slot), value = String(topic ?? '').trim();
+  if (![7, 8, 9].includes(grade) || !isValidWeekStart(weekStart) || !Number.isInteger(lesson) || lesson < 1 || lesson > 3 || value.length > 200) throw new Error('Kontrollera årskurs, vecka och lektionsplanering.');
+  data.lessonPlans ??= [];
+  data.lessonPlans = data.lessonPlans.filter(p => !(p.yearGroup === grade && p.weekStart === weekStart && p.slot === lesson));
+  if (value) data.lessonPlans.push({ yearGroup: grade, weekStart, slot: lesson, topic: value });
+}
+export function copyLessonPlanWeek(data, sourceYearGroup, targetYearGroups, weekStart) {
+  const source = Number(sourceYearGroup), targets = [...new Set(targetYearGroups.map(Number))].filter(grade => [7, 8, 9].includes(grade) && grade !== source);
+  if (![7, 8, 9].includes(source) || !isValidWeekStart(weekStart) || !targets.length) throw new Error('Välj minst en annan årskurs att kopiera till.');
+  data.lessonPlans ??= [];
+  for (const target of targets) {
+    data.lessonPlans = data.lessonPlans.filter(p => !(p.yearGroup === target && p.weekStart === weekStart));
+    for (const plan of data.lessonPlans.filter(p => p.yearGroup === source && p.weekStart === weekStart)) data.lessonPlans.push({ ...plan, yearGroup: target });
+  }
+  return targets;
+}
+function isValidWeekStart(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && dateKey(parseDate(value)) === value && parseDate(value).getDay() === 1;
+}
+export function planWeekStatus(data, yearGroup, weekStart) {
+  const classes = data.classes.filter(c => Number(c.yearGroup) === Number(yearGroup));
+  const scheduledDates = classes.flatMap(c => data.schedules.filter(s => s.classId === c.id).map(s => addDays(weekStart, (s.day + 6) % 7)));
+  const activeCount = scheduledDates.filter(date => !scheduleBreakForDate(data, date)).length;
+  return { scheduledCount: scheduledDates.length, activeCount, affectedCount: scheduledDates.length - activeCount, excluded: scheduledDates.length > 0 && activeCount === 0 };
+}
+export function termPlanWeeks(data, yearGroup, termStart, count = 24) {
+  const start = weekStartDate(termStart), weeks = Math.max(1, Math.min(52, Number(count) || 24));
+  return Array.from({ length: weeks }, (_, index) => {
+    const weekStart = addDays(start, index * 7);
+    return { weekStart, ...planWeekStatus(data, yearGroup, weekStart) };
+  });
+}
 export function lessonsForDate(data, date) {
   const day = parseDate(date).getDay();
   // Only suppress unsaved recurring lessons; existing and one-off lessons remain available.
   const recurring = scheduleBreakForDate(data, date) ? [] : data.schedules.filter(s => s.day === day);
   const list = recurring.map(s => {
     const saved = data.sessions.find(l => l.date === date && l.scheduleId === s.id);
-    return saved || { ...s, id: `planned:${s.id}`, scheduleId: s.id, date, planned: true };
+    if (saved) return saved;
+    const group = data.classes.find(c => c.id === s.classId)?.yearGroup;
+    const slot = group ? schedulePlanSlot(data, s.classId, s.id) : null;
+    const plannedTopic = slot ? lessonPlan(data, group, weekStartDate(date), slot)?.topic : '';
+    return { ...s, id: `planned:${s.id}`, scheduleId: s.id, date, planned: true, planSlot: slot, topic: plannedTopic || s.topic };
   });
   for (const s of data.sessions.filter(s => s.date === date)) if (!list.some(l => l.id === s.id)) list.push(s);
   return list.sort((a, b) => a.start.localeCompare(b.start));
@@ -227,9 +276,19 @@ export function validateData(data) {
   const classIds = new Set(), studentIds = new Set(), sessionIds = new Set(), scheduleIds = new Set();
   for (const c of data.classes) {
     assert(isText(c.id, 100) && !classIds.has(c.id) && isText(c.name, 80) && c.name.trim() && Array.isArray(c.students) && c.students.length <= 500, 'fel i en klass.'); classIds.add(c.id);
+    assert(c.yearGroup === undefined || c.yearGroup === null || [7, 8, 9].includes(c.yearGroup), 'ogiltig årskurs för en klass.');
     for (const s of c.students) {
       assert(isText(s.id, 100) && !studentIds.has(s.id) && isText(s.first, 100) && s.first.trim() && isText(s.last, 100) && s.last.trim() && typeof s.archived === 'boolean', 'fel i en elev.');
       assert(!s.followupResetDate || isDate(s.followupResetDate), 'ogiltigt uppföljningsdatum.'); studentIds.add(s.id);
+    }
+  }
+  if (data.lessonPlans !== undefined) {
+    assert(Array.isArray(data.lessonPlans) && data.lessonPlans.length <= 5000, 'fel i grovplaneringen.');
+    const plans = new Set();
+    for (const plan of data.lessonPlans) {
+      const key = `${plan?.yearGroup}:${plan?.weekStart}:${plan?.slot}`;
+      assert(isObj(plan) && [7, 8, 9].includes(plan.yearGroup) && isValidWeekStart(plan.weekStart) && Number.isInteger(plan.slot) && plan.slot >= 1 && plan.slot <= 3 && isText(plan.topic, 200) && plan.topic.trim() && !plans.has(key), 'ogiltig eller dubblerad lektionsplanering.');
+      plans.add(key);
     }
   }
   for (const s of data.schedules) { assert(isText(s.id, 100) && !scheduleIds.has(s.id) && classIds.has(s.classId) && Number.isInteger(s.day) && s.day >= 0 && s.day <= 6 && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.location, 200) && isText(s.topic, 200), 'fel i veckoschemat.'); scheduleIds.add(s.id); }
@@ -259,6 +318,8 @@ export function upgradeData(data) {
   validateData(data);
   const upgraded = clone(data);
   upgraded.breaks ??= [];
+  upgraded.lessonPlans ??= [];
+  for (const c of upgraded.classes) c.yearGroup ??= null;
   upgraded.settings.theme ??= 'green';
   for (const session of upgraded.sessions) session.finalAssessment ??= false;
   for (const session of upgraded.sessions) for (const [id, o] of Object.entries(session.observations)) {

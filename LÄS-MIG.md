@@ -1,8 +1,10 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.3.4.
+En lokal lektionsbok för idrottslärare. Version 1.4.0.
 
-## Nytt i version 1.3.4
+## Nytt i version 1.4.0
+
+- Koppla varje klass till årskurs 7, 8 eller 9. I **Terminsplanering** väljer du terminens veckor och lägger in tre pass per vecka; registrerade lov och studiedagar markeras och veckor utan ordinarie pass låses. Kopiera en veckas plan mellan årskurser. Ämnet kopieras till den startade lektionen och ändringar där gäller bara det passet.
 
 - Översikten följer automatiskt enhetens lokala datum och vecka när appen öppnas, återupptas och när dagen byter datum. Manuell bläddring ligger kvar tills du väljer **Till idag**.
 - Välj mellan tio färgteman i **Inställningar**. Originaltemat Skog är kvar som standard.
