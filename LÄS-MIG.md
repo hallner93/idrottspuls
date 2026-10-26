@@ -4,6 +4,8 @@ En lokal lektionsbok för idrottslärare. Version 1.4.0.
 
 ## Nytt i version 1.4.0
 
+- Koppla varje klass till årskurs 7, 8 eller 9 och planera terminens tre pass per vecka i fliken **Terminsplanering**. Kopiera en veckas plan mellan årskurser; ändringar i en startad lektion gäller bara det passet.
+
 - Översikten följer automatiskt enhetens lokala datum och vecka när appen öppnas, återupptas och när dagen byter datum. Manuell bläddring ligger kvar tills du väljer **Till idag**.
 - Välj mellan tio färgteman i **Inställningar**. Originaltemat Skog är kvar som standard.
 - Excel-exporten kan visa en rad per elev med samtliga lektioner samlade i cellerna, eller behålla detaljformatet med en rad per elev och lektion.
