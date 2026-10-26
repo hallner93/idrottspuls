@@ -19,7 +19,7 @@ export const parseDate = value => new Date(`${value}T12:00:00`);
 export function addDays(value, count) { const d = parseDate(value); d.setDate(d.getDate() + count); return dateKey(d); }
 export function termStart(today = dateKey()) { return `${today.slice(0, 4)}-${today.slice(5, 7) >= '08' ? '08' : '01'}-01`; }
 export function termInfo(date) {
-  const year=Number(date.slice(0,4)),month=Number(date.slice(5,7)),semester=month>=7?'HT':'VT',schoolYear=month>=7?year:year-1;
+  const year=Number(date.slice(0,4)),month=Number(date.slice(5,7)),semester=month>=8?'HT':'VT',schoolYear=month>=8?year:year-1;
   return {semester,schoolYear,label:`${semester} ${schoolYear}/${schoolYear+1}`};
 }
 export function nextTermStart(date) {
