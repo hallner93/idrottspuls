@@ -1,6 +1,13 @@
 # Verifiering av Idrottspuls
 
-## Version 1.5.0 – kontrollerat den 26 oktober 2026
+## Version 1.6.0 – kontrollerat den 28 oktober 2026
+
+- Regressionstester täcker terminsplaneringens Excelrader och lovmarkering samt att helgdagar inte visar schemalektioner och att observationsfokus följer med till en startad lektion.
+- Terminsplaneringen kan exporteras till Excel för årskurs 7–9. Klasser har en periodstyrd klassrapport och Excel-export, terminsarkivet kan sökas och översikten visar lektionspass med saknade observationer.
+- Schemalektioner har snabbval för tio aktivitetsområden och valfritt observationsfokus. Befintlig dataformatversion är oförändrad och de nya fälten är valfria så äldre elevdata fortsatt kan läsas.
+- Androidens versionName är 1.6.0 och versionCode 12. APK:n byggs i GitHub Actions efter att ändringen har lagts på `main`; bygget använder de befintliga signeringshemligheterna.
+
+## Version 1.5.1 – kontrollerat den 26 oktober 2026
 
 - 50 automatiska tester passerar. Regressionstester täcker lokal datumväxling, fortsatt manuell navigering, återgång till Idag, temaval, offlinecache, en rad per elev, slutbedömningar i Excel och migration av äldre lokala data och att appstart inte skriver om hela lagringen.
 - Slutbedömning sparas per lektion, visas som egen sammanställningskolumn och listas med datum och arbetsområde i elevhistoriken. Äldre lektioner migreras som ej markerade.
@@ -11,7 +18,7 @@
 - Klasser kan sökas på klassnamn och aktiva elevnamn. Översikten ersätter volleybollplansbilden med oavslutade lektionspass som öppnas direkt för fortsatt dokumentation.
 - Excelbladet har högre rubrikrad, radhöjd anpassad till radbrytningar, växlande radbakgrund och grön markering för slutbedömningar.
 - Utvecklarens namn visas i inställningarna.
-- Androidens versionName är 1.5.0 och versionCode 10. APK:n är inte byggd i denna miljö; GitHub Actions-bygget ska köras efter att uppdateringen är inlagd på main och kräver de två befintliga signeringshemligheterna.
+- Androidens versionName är 1.5.1 och versionCode 11. APK:n är inte byggd i denna miljö; GitHub Actions-bygget ska köras efter att uppdateringen är inlagd på main och kräver de två befintliga signeringshemligheterna.
 
 ## Version 1.3.1 – kontrollerat den 26 oktober 2026
 
@@ -81,3 +88,4 @@ Ett manuellt GitHub Actions-bygge har lagts till. Det använder en standardmaski
 Byggfilen har lästs med en YAML-parser och samtliga shellsteg har passerat syntaxkontroll. Manuell start, rättigheter, byggmiljö, versionsreferenser, tidsgräns och lagringstid har kontrollerats. De 15 befintliga testerna passerar även efter förberedelsen. Androidmanifestet och resurserna passerar XML-kontrollen.
 
 GitHubkontot behöver först vara klart och projektet uppladdat till ett privat kodarkiv. Ingen GitHubkörning eller APK har bekräftats i detta förberedelsesteg. En lyckad körning och provning på surfplattan återstår.
+
