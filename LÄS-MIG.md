@@ -1,6 +1,19 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.5.0.
+En lokal lektionsbok för idrottslärare. Version 1.6.0.
+
+## Nytt i version 1.6.0
+
+- Lägg in återanvändbara snabbval för arbetsområde och observationsfokus när du skapar en lektion.
+- Öppna en **Klassrapport** från klasskortet med närvaro, kläder, skor, sen ankomst och observationer för vald period. Rapporten kan exporteras till Excel.
+- Sök i terminsarkivet efter termin, klass, elev eller arbetsområde.
+- Påminnelser på översikten visar sparade lektioner där närvarande elever fortfarande saknar observation.
+- Exportera terminsplaneringen med alla tre årskurserna och lov/studiedagar till Excel.
+- Översikt och veckoschema visar bara måndag–fredag. En felaktigt startad lektion kan avbrytas och återställas; redan sparade uppgifter behålls.
+
+## Nytt i version 1.5.1
+
+- Veckovy och veckoschema visar bara måndag–fredag. Återkommande och extra lektioner kan bara läggas på vardagar. Eventuella äldre helgposter tas inte bort ur sparad historik. Avbryt en felaktigt startad lektion från lektionsvyn; dess data bevaras och den kan återställas från översikten.
 
 ## Nytt i version 1.5.0
 
@@ -133,3 +146,4 @@ Appens webbdel har inga npm-beroenden och behöver inget byggsteg. Kör `node --
 Den här versionen har 29 godkända automatiska kontroller. En exporterad arbetsbok har dessutom öppnats med openpyxl för kontroll av svenska tecken, numeriska minuter, textceller, filter och låst rubrikrad. Gränssnittet för namnimport har provats i den lokala förhandsvisningen. Se `VERIFIERING.md` för genomförda kontroller och kvarvarande Androidkontroller.
 
 Källor: `web/app.js` innehåller gränssnittet, `web/model.js` reglerna, `web/storage.js` lagringen och `web/xlsx.js` Excel-skrivaren. Ändra versionsnamnet i `web/sw.js` när cachade webbfiler uppdateras. Ingen förändring av service workern behövs för Android, där den inte registreras.
+
