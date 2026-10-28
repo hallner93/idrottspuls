@@ -1,4 +1,4 @@
-# Bygg och installera Idrottspuls 1.5.0
+# Bygg och installera Idrottspuls 1.6.0
 
 Den signerade Androidappen byggs i GitHub Actions. Appen fungerar offline och elevuppgifterna lagras lokalt på surfplattan.
 
@@ -14,7 +14,7 @@ Bygget kör automatiskt regressionstesterna innan det signerar och verifierar AP
 
 ## Uppdatera appen på surfplattan
 
-Behåll appen installerad och öppna APK-filen på surfplattan. Version 1.5.0 använder samma app-id, `se.idrottspuls.app`, och den permanenta signeringsnyckeln. Android installerar den som en uppdatering och behåller då appens lokalt sparade uppgifter. Avinstallera inte appen och välj inte **Rensa lagring**.
+Behåll appen installerad och öppna APK-filen på surfplattan. Version 1.6.0 använder samma app-id, `se.idrottspuls.app`, och den permanenta signeringsnyckeln. Android installerar den som en uppdatering och behåller då appens lokalt sparade uppgifter. Avinstallera inte appen och välj inte **Rensa lagring**.
 
 Skapa gärna en säkerhetskopia i **Export & backup → Skapa säkerhetskopia** före större uppdateringar och kontrollera efter installationen att dina klasser och lektioner finns kvar. Säkerhetskopian innehåller elevuppgifter; välj en lagringsplats som skolan godkänner.
 
@@ -23,3 +23,4 @@ Skapa gärna en säkerhetskopia i **Export & backup → Skapa säkerhetskopia** 
 Öppna det röda steget i Actions-körningen och läs felmeddelandet. Om bygget saknar signeringsnyckel behöver de två Actions-hemligheterna läggas in. Dela aldrig hemligheternas innehåll eller elevuppgifter i en felrapport.
 
 Byggresultatet sparas i GitHub i sju dagar. En redan installerad app påverkas inte när byggresultatet tas bort.
+
