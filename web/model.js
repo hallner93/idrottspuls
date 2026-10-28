@@ -109,7 +109,7 @@ export function weekStartDate(date) {
   return addDays(date, 1 - (day || 7));
 }
 export function schedulePlanSlot(data, classId, scheduleId) {
-  const ordered = data.schedules.filter(s => s.classId === classId).sort((a, b) => ((a.day + 6) % 7) - ((b.day + 6) % 7) || a.start.localeCompare(b.start) || a.id.localeCompare(b.id));
+  const ordered = data.schedules.filter(s => s.classId === classId && s.day >= 1 && s.day <= 5).sort((a, b) => a.day - b.day || a.start.localeCompare(b.start) || a.id.localeCompare(b.id));
   const index = ordered.findIndex(s => s.id === scheduleId);
   return index >= 0 && index < 3 ? index + 1 : null;
 }
@@ -138,7 +138,7 @@ function isValidWeekStart(value) {
 }
 export function planWeekStatus(data, yearGroup, weekStart) {
   const classes = data.classes.filter(c => Number(c.yearGroup) === Number(yearGroup));
-  const scheduledDates = classes.flatMap(c => data.schedules.filter(s => s.classId === c.id).map(s => addDays(weekStart, (s.day + 6) % 7)));
+  const scheduledDates = classes.flatMap(c => data.schedules.filter(s => s.classId === c.id && s.day >= 1 && s.day <= 5).map(s => addDays(weekStart, s.day - 1)));
   const activeCount = scheduledDates.filter(date => !scheduleBreakForDate(data, date)).length;
   return { scheduledCount: scheduledDates.length, activeCount, affectedCount: scheduledDates.length - activeCount, excluded: scheduledDates.length > 0 && activeCount === 0 };
 }
@@ -151,23 +151,26 @@ export function termPlanWeeks(data, yearGroup, termStart, count = 24) {
 }
 export function lessonsForDate(data, date) {
   const day = parseDate(date).getDay();
+  if (day === 0 || day === 6) return [];
   // Only suppress unsaved recurring lessons; existing and one-off lessons remain available.
   const recurring = scheduleBreakForDate(data, date) ? [] : data.schedules.filter(s => s.day === day);
   const list = recurring.map(s => {
-    const saved = data.sessions.find(l => l.date === date && l.scheduleId === s.id);
+    const occurrences=data.sessions.filter(l=>l.date===date&&l.scheduleId===s.id);
+    const saved=occurrences.find(l=>!l.cancelledAt);
     if (saved) return saved;
+    if (occurrences.some(l=>l.cancelledAt)) return null;
     const group = data.classes.find(c => c.id === s.classId)?.yearGroup;
     const slot = group ? schedulePlanSlot(data, s.classId, s.id) : null;
     const plannedTopic = slot ? lessonPlan(data, group, weekStartDate(date), slot)?.topic : '';
     return { ...s, id: `planned:${s.id}`, scheduleId: s.id, date, planned: true, planSlot: slot, topic: plannedTopic || s.topic };
-  });
-  for (const s of data.sessions.filter(s => s.date === date)) if (!list.some(l => l.id === s.id)) list.push(s);
+  }).filter(Boolean);
+  for (const s of data.sessions.filter(s => s.date === date&&!s.cancelledAt)) if (!list.some(l => l.id === s.id)) list.push(s);
   return list.sort((a, b) => a.start.localeCompare(b.start));
 }
 export function materialize(data, lesson) {
   if (!lesson.planned) return lesson;
   const students = roster(data, lesson.classId);
-  const session = { id: uid(), classId: lesson.classId, className: data.classes.find(c => c.id === lesson.classId)?.name || '', scheduleId: lesson.scheduleId, date: lesson.date, start: lesson.start, end: lesson.end, location: lesson.location, topic: lesson.topic || '', studentIds: students.map(s => s.id), studentNames: Object.fromEntries(students.map(s => [s.id, { first: s.first, last: s.last }])), attendance: {}, attendanceDraft: null, attendanceSavedAt: null, observations: {}, skipObservation: false, finalAssessment: false, complete: false };
+  const session = { id: uid(), classId: lesson.classId, className: data.classes.find(c => c.id === lesson.classId)?.name || '', scheduleId: lesson.scheduleId, date: lesson.date, start: lesson.start, end: lesson.end, location: lesson.location, topic: lesson.topic || '', focus: lesson.focus || '', studentIds: students.map(s => s.id), studentNames: Object.fromEntries(students.map(s => [s.id, { first: s.first, last: s.last }])), attendance: {}, attendanceDraft: null, attendanceSavedAt: null, observations: {}, skipObservation: false, finalAssessment: false, complete: false, cancelledAt: null };
   data.sessions.push(session);
   return session;
 }
@@ -176,7 +179,7 @@ export function negative(o) { return observationGrades(o).includes('F') || obser
 export function followup(data, studentId) {
   const student = data.classes.flatMap(c => c.students).find(s => s.id === studentId);
   const cutoff = [data.settings.termStart, student?.followupResetDate || '0000-00-00'];
-  const entries = data.sessions.filter(s => !s.skipObservation && s.attendanceSavedAt && s.date >= cutoff[0] && s.date > cutoff[1] && !s.attendance[studentId]?.absent && s.observations[studentId]);
+  const entries = data.sessions.filter(s => !s.cancelledAt && !s.skipObservation && s.attendanceSavedAt && s.date >= cutoff[0] && s.date > cutoff[1] && !s.attendance[studentId]?.absent && s.observations[studentId]);
   const count = entries.filter(s => negative(s.observations[studentId])).length;
   const manual = entries.some(s => observationAssessments(s.observations[studentId]).includes('followup'));
   return { count, manual, flagged: manual || count >= data.settings.threshold };
@@ -185,7 +188,7 @@ export function followupSummaries(data) {
   const summaries = new Map();
   for (const c of data.classes) for (const student of c.students) summaries.set(student.id, { count: 0, manual: false, flagged: false, resetDate: student.followupResetDate || '0000-00-00' });
   for (const session of data.sessions) {
-    if (session.skipObservation || !session.attendanceSavedAt || session.date < data.settings.termStart) continue;
+    if (session.cancelledAt || session.skipObservation || !session.attendanceSavedAt || session.date < data.settings.termStart) continue;
     for (const studentId of session.studentIds) {
       const summary = summaries.get(studentId);
       if (!summary || session.date <= summary.resetDate || session.attendance[studentId]?.absent) continue;
@@ -205,13 +208,13 @@ export function flaggedStudents(data, summaries = followupSummaries(data)) {
   return data.classes.flatMap(c => roster(data, c.id).map(s => ({ ...s, classId: c.id, className: c.name, ...summaries.get(s.id) }))).filter(s => s.flagged);
 }
 export function filteredSessions(data, filters = {}) {
-  return data.sessions.filter(s => s.attendanceSavedAt && (!filters.classId || s.classId === filters.classId) && (!filters.from || s.date >= filters.from) && (!filters.to || s.date <= filters.to)).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start));
+  return data.sessions.filter(s => !s.cancelledAt && s.attendanceSavedAt && (!filters.classId || s.classId === filters.classId) && (!filters.from || s.date >= filters.from) && (!filters.to || s.date <= filters.to)).sort((a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start));
 }
 export function unfinishedSessions(data, limit = 4) {
   const count = Math.max(0, Math.trunc(limit) || 0), newestFirst = (a, b) => b.date.localeCompare(a.date) || b.start.localeCompare(a.start), result = [];
   if (!count) return result;
   for (const session of data.sessions) {
-    if (session.complete) continue;
+    if (session.complete || session.cancelledAt) continue;
     const index = result.findIndex(current => newestFirst(session, current) < 0);
     if (index < 0) { if (result.length < count) result.push(session); }
     else { result.splice(index, 0, session); if (result.length > count) result.pop(); }
@@ -219,14 +222,14 @@ export function unfinishedSessions(data, limit = 4) {
   return result;
 }
 export function studentFinalAssessments(data, studentId, sessions = filteredSessions(data, {})) {
-  return sessions.filter(session => session.finalAssessment && session.studentIds.includes(studentId));
+  return sessions.filter(session => !session.cancelledAt && session.finalAssessment && session.studentIds.includes(studentId));
 }
 export function reportedLessons(sessions, now = new Date()) {
   const today = dateKey(now), time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  return sessions.filter(s => s.attendanceSavedAt && (s.date < today || (s.date === today && s.end <= time)));
+  return sessions.filter(s => !s.cancelledAt && s.attendanceSavedAt && (s.date < today || (s.date === today && s.end <= time)));
 }
 export function studentStats(data, student, sessions, now = new Date()) {
-  const recorded = sessions.filter(s => s.attendanceSavedAt && s.studentIds.includes(student.id));
+  const recorded = sessions.filter(s => !s.cancelledAt && s.attendanceSavedAt && s.studentIds.includes(student.id));
   const relevant = reportedLessons(recorded, now);
   const attended = relevant.filter(s => !s.attendance[student.id]?.absent);
   const observationEligible = recorded.filter(s => !s.attendance[student.id]?.absent);
@@ -237,12 +240,12 @@ export function studentStats(data, student, sessions, now = new Date()) {
   return { total: relevant.length, present: attended.length, absent, clothes, shoes, absentRate: percent(absent), clothesRate: percent(clothes), shoesRate: percent(shoes), late: a.filter(a => a.lateMinutes > 0).length, minutes: a.reduce((n, a) => n + (a.lateMinutes || 0), 0), rate: percent(attended.length), observationEligible: observationEligible.length, observed: observed.length, latest: observed[0]?.observations[student.id] || null, negative: observed.filter(s => negative(s.observations[student.id])).length, ...followup(data, student.id) };
 }
 export const EXPORT_FIELDS = [
-  ['first', 'Förnamn'], ['last', 'Efternamn'], ['class', 'Klass'], ['date', 'Datum'], ['time', 'Tid'], ['topic', 'Arbetsområde'], ['finalAssessment', 'Slutbedömning'], ['attendance', 'Närvaro'], ['clothes', 'Glömt kläder'], ['shoes', 'Glömt skor'], ['late', 'Sen ankomst (min)'], ['assessment', 'Observation'], ['grade', 'Lektionsbedömning'], ['note', 'Anteckning'], ['followup', 'Behov av uppföljning'],
+  ['first', 'Förnamn'], ['last', 'Efternamn'], ['class', 'Klass'], ['date', 'Datum'], ['time', 'Tid'], ['topic', 'Arbetsområde'], ['focus', 'Observationsfokus'], ['finalAssessment', 'Slutbedömning'], ['attendance', 'Närvaro'], ['clothes', 'Glömt kläder'], ['shoes', 'Glömt skor'], ['late', 'Sen ankomst (min)'], ['assessment', 'Observation'], ['grade', 'Lektionsbedömning'], ['note', 'Anteckning'], ['followup', 'Behov av uppföljning'],
 ];
 function exportValues(data, session, student) {
   const a = session.attendance[student.id] || blankAttendance();
   const o = session.skipObservation || a.absent ? {} : session.observations[student.id] || {};
-  return { first: student.first, last: student.last, class: session.className || data.classes.find(c => c.id === session.classId)?.name || '', date: session.date, time: `${session.start}–${session.end}`, topic: session.topic || '', finalAssessment: session.finalAssessment ? 'Ja' : 'Nej', attendance: a.absent ? 'Frånvarande' : 'Närvarande', clothes: a.clothes ? 'Ja' : 'Nej', shoes: a.shoes ? 'Ja' : 'Nej', late: a.lateMinutes || 0, assessment: session.skipObservation ? 'Observation avstådd' : a.absent ? 'Frånvarande' : !hasObservation(o) ? 'Ej observerad' : observationLabel(o, '; ') || 'Ingen observationsmarkering', grade: gradeLabel(o), note: o.note || '', followup: followup(data, student.id).flagged ? 'Ja' : 'Nej' };
+  return { first: student.first, last: student.last, class: session.className || data.classes.find(c => c.id === session.classId)?.name || '', date: session.date, time: `${session.start}–${session.end}`, topic: session.topic || '', focus: session.focus || '', finalAssessment: session.finalAssessment ? 'Ja' : 'Nej', attendance: a.absent ? 'Frånvarande' : 'Närvarande', clothes: a.clothes ? 'Ja' : 'Nej', shoes: a.shoes ? 'Ja' : 'Nej', late: a.lateMinutes || 0, assessment: session.skipObservation ? 'Observation avstådd' : a.absent ? 'Frånvarande' : !hasObservation(o) ? 'Ej observerad' : observationLabel(o, '; ') || 'Ingen observationsmarkering', grade: gradeLabel(o), note: o.note || '', followup: followup(data, student.id).flagged ? 'Ja' : 'Nej' };
 }
 export function exportRows(data, filters, selected) {
   const rows = [selected.map(key => EXPORT_FIELDS.find(f => f[0] === key)[1])];
@@ -262,6 +265,15 @@ export function exportRowsByStudent(data, filters, selected) {
   }
   const records = [...students.values()].sort((a, b) => a.values.class.localeCompare(b.values.class, 'sv') || a.values.last.localeCompare(b.values.last, 'sv') || a.values.first.localeCompare(b.values.first, 'sv'));
   for (const record of records) rows.push(selected.map(key => ['first','last','class','followup'].includes(key) ? record.values[key] : record.events.map(event => String(event[key] ?? '').replace(/\r\n?|\n/g, ' ↵ ') || '–').join('\n')));
+  return rows;
+}
+export function exportTermPlanRows(data, termStart, count = 24) {
+  const rows=[['Årskurs','Vecka börjar','Lektion 1','Lektion 2','Lektion 3','Lov/studiedag']],weeks=termPlanWeeks(data,7,termStart,count);
+  for(const grade of [7,8,9]) for(const week of weeks){
+    const schedules=data.classes.filter(c=>Number(c.yearGroup)===grade).flatMap(c=>data.schedules.filter(s=>s.classId===c.id&&s.day>=1&&s.day<=5));
+    const breaks=[...new Set(schedules.map(s=>scheduleBreakForDate(data,addDays(week.weekStart,s.day-1))?.label).filter(Boolean))];
+    rows.push([`Årskurs ${grade}`,week.weekStart,...[1,2,3].map(slot=>lessonPlan(data,grade,week.weekStart,slot)?.topic||''),breaks.join('; ')]);
+  }
   return rows;
 }
 function assert(condition, message) { if (!condition) throw new Error(`Säkerhetskopian är ogiltig: ${message}`); }
@@ -307,10 +319,11 @@ export function validateData(data) {
       archiveIds.add(archive.id);validateData(archive.data);
     }
   }
-  for (const s of data.schedules) { assert(isText(s.id, 100) && !scheduleIds.has(s.id) && classIds.has(s.classId) && Number.isInteger(s.day) && s.day >= 0 && s.day <= 6 && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.location, 200) && isText(s.topic, 200), 'fel i veckoschemat.'); scheduleIds.add(s.id); }
+  for (const s of data.schedules) { assert(isText(s.id, 100) && !scheduleIds.has(s.id) && classIds.has(s.classId) && Number.isInteger(s.day) && s.day >= 0 && s.day <= 6 && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.location, 200) && isText(s.topic, 200) && (s.focus === undefined || isText(s.focus, 300)), 'fel i veckoschemat.'); scheduleIds.add(s.id); }
   const lessonKeys = new Set();
   for (const s of data.sessions) {
-    assert(isText(s.id, 100) && !sessionIds.has(s.id) && classIds.has(s.classId) && isDate(s.date) && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.topic, 200) && isText(s.location, 200) && typeof s.skipObservation === 'boolean' && typeof s.complete === 'boolean' && (s.finalAssessment === undefined || typeof s.finalAssessment === 'boolean'), 'fel i en lektion.'); sessionIds.add(s.id);
+    assert(isText(s.id, 100) && !sessionIds.has(s.id) && classIds.has(s.classId) && isDate(s.date) && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.topic, 200) && isText(s.location, 200) && (s.focus === undefined || isText(s.focus, 300)) && typeof s.skipObservation === 'boolean' && typeof s.complete === 'boolean' && (s.finalAssessment === undefined || typeof s.finalAssessment === 'boolean'), 'fel i en lektion.'); sessionIds.add(s.id);
+    assert(s.cancelledAt === undefined || s.cancelledAt === null || (isText(s.cancelledAt, 40) && !Number.isNaN(Date.parse(s.cancelledAt))), 'ogiltig avbruten lektion.');
     assert(Array.isArray(s.studentIds) && s.studentIds.length <= 500 && new Set(s.studentIds).size === s.studentIds.length && isObj(s.studentNames) && isObj(s.attendance) && isObj(s.observations), 'fel i lektionslistan.');
     const members = data.classes.find(c => c.id === s.classId).students;
     assert(s.studentIds.every(id => members.some(m => m.id === id) && isObj(s.studentNames[id]) && isText(s.studentNames[id].first, 100) && isText(s.studentNames[id].last, 100)), 'felaktig koppling mellan elev och klass.');
@@ -391,3 +404,4 @@ export function demoData(today = dateKey()) {
   data.settings.school = 'Min idrottssal';
   return data;
 }
+

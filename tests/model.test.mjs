@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -26,6 +26,11 @@ test('Unfinished lesson shortcuts include only active sessions, newest first, wi
   assert.deepEqual(unfinishedSessions(d).map(s=>s.id),[newer.id,older.id]);
   assert.deepEqual(unfinishedSessions(d,1).map(s=>s.id),[newer.id]);
 });
+test('Cancelled accidental lessons retain data but disappear from follow-up, reports, and unfinished lessons',()=>{
+  const d=fixture(),s=lesson(d,'2026-10-01');s.cancelledAt='2026-10-01T10:00:00.000Z';
+  assert.deepEqual(unfinishedSessions(d),[]);assert.deepEqual(filteredSessions(d),[]);assert.equal(followup(d,'s1').count,0);assert.equal(exportRows(d,{},['first']).length,1);
+  s.cancelledAt=null;assert.equal(unfinishedSessions(d).length,1);assert.equal(filteredSessions(d).length,1);assert.equal(d.sessions[0].observations.s1.grade,'F');
+});
 test('Weekly lesson plans follow the class year group and the three scheduled lessons in week order',()=>{
   const d=fixture();d.classes[0].yearGroup=7;
   d.schedules=[
@@ -46,6 +51,15 @@ test('Weekly lesson plans follow the class year group and the three scheduled le
   setLessonPlan(d,7,'2026-10-26',3,'Balans');
   assert.equal(lessonsForDate(d,'2026-10-30')[0].topic,'Orientering utomhus','a started lesson keeps its editable topic');
   assert.equal(lessonPlan(d,7,'2026-10-26',3).topic,'Balans','changing a lesson does not edit the shared plan');
+});
+test('Weekend dates never show recurring lessons, while a weekday lesson retains its observation focus',()=>{
+  const d=fixture();d.schedules=[{id:'fri',classId:'c1',day:5,start:'08:00',end:'09:00',location:'Hall',topic:'Volleyboll',focus:'Serv och fingerslag'}];
+  assert.deepEqual(lessonsForDate(d,'2026-10-31'),[]);assert.deepEqual(lessonsForDate(d,'2026-11-01'),[]);
+  const session=materialize(d,lessonsForDate(d,'2026-10-30')[0]);assert.equal(session.focus,'Serv och fingerslag');assert.doesNotThrow(()=>validateData(d));
+});
+test('Term plan Excel includes the three year groups and a readable break label',()=>{
+  const d=fixture();d.classes[0].yearGroup=7;d.schedules=[{id:'mon',classId:'c1',day:1,start:'08:00',end:'09:00',location:'Hall',topic:'Volleyboll'}];d.breaks=[{id:'study',start:'2026-08-31',end:'2026-08-31',label:'Studiedag'}];setLessonPlan(d,7,'2026-08-31',1,'Serv och mottagning');
+  const rows=exportTermPlanRows(d,'2026-09-01',1);assert.equal(rows.length,4);assert.deepEqual(rows[0],['Årskurs','Vecka börjar','Lektion 1','Lektion 2','Lektion 3','Lov/studiedag']);assert.deepEqual(rows[1],['Årskurs 7','2026-08-31','Serv och mottagning','','','Studiedag']);assert.equal(rows[2][0],'Årskurs 8');assert.equal(rows[3][0],'Årskurs 9');
 });
 test('The term week list follows the configured term start and marks full and partial breaks',()=>{
   const d=fixture();d.classes[0].yearGroup=7;
@@ -311,3 +325,4 @@ test('Review edits preserve complex names and reject missing or oversized parts'
   assert.throws(()=>validateStudentList([{first:'A'.repeat(101),last:'B',line:8}]),/rad 8/);
   assert.throws(()=>parseStudentList('Anna\tAndersson\t7A'),/Rad 1/);
 });
+
