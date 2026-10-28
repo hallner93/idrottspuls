@@ -1,5 +1,11 @@
 # Verifiering av Idrottspuls
 
+## Version 1.6.1 – kontrollerat den 28 oktober 2026
+
+- Veckodagarnas lektionsantal visas som en tydligt avgränsad textetikett, inklusive singular och plural.
+- Androidens versionName är 1.6.1 och versionCode 13. Service worker-cachen har höjts så webbversionen hämtar de uppdaterade filerna.
+- Syntaxkontroll och samtliga 60 automatiska tester passerar. APK:n skapas via GitHub Actions efter merge till `main`.
+
 ## Version 1.6.0 – kontrollerat den 28 oktober 2026
 
 - Regressionstester täcker terminsplaneringens Excelrader och lovmarkering samt att helgdagar inte visar schemalektioner och att observationsfokus följer med till en startad lektion.
@@ -88,4 +94,3 @@ Ett manuellt GitHub Actions-bygge har lagts till. Det använder en standardmaski
 Byggfilen har lästs med en YAML-parser och samtliga shellsteg har passerat syntaxkontroll. Manuell start, rättigheter, byggmiljö, versionsreferenser, tidsgräns och lagringstid har kontrollerats. De 15 befintliga testerna passerar även efter förberedelsen. Androidmanifestet och resurserna passerar XML-kontrollen.
 
 GitHubkontot behöver först vara klart och projektet uppladdat till ett privat kodarkiv. Ingen GitHubkörning eller APK har bekräftats i detta förberedelsesteg. En lyckad körning och provning på surfplattan återstår.
-
