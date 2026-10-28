@@ -170,7 +170,7 @@ export function lessonsForDate(data, date) {
 export function materialize(data, lesson) {
   if (!lesson.planned) return lesson;
   const students = roster(data, lesson.classId);
-  const session = { id: uid(), classId: lesson.classId, className: data.classes.find(c => c.id === lesson.classId)?.name || '', scheduleId: lesson.scheduleId, date: lesson.date, start: lesson.start, end: lesson.end, location: lesson.location, topic: lesson.topic || '', studentIds: students.map(s => s.id), studentNames: Object.fromEntries(students.map(s => [s.id, { first: s.first, last: s.last }])), attendance: {}, attendanceDraft: null, attendanceSavedAt: null, observations: {}, skipObservation: false, finalAssessment: false, complete: false, cancelledAt: null };
+  const session = { id: uid(), classId: lesson.classId, className: data.classes.find(c => c.id === lesson.classId)?.name || '', scheduleId: lesson.scheduleId, date: lesson.date, start: lesson.start, end: lesson.end, location: lesson.location, topic: lesson.topic || '', focus: lesson.focus || '', studentIds: students.map(s => s.id), studentNames: Object.fromEntries(students.map(s => [s.id, { first: s.first, last: s.last }])), attendance: {}, attendanceDraft: null, attendanceSavedAt: null, observations: {}, skipObservation: false, finalAssessment: false, complete: false, cancelledAt: null };
   data.sessions.push(session);
   return session;
 }
@@ -240,12 +240,12 @@ export function studentStats(data, student, sessions, now = new Date()) {
   return { total: relevant.length, present: attended.length, absent, clothes, shoes, absentRate: percent(absent), clothesRate: percent(clothes), shoesRate: percent(shoes), late: a.filter(a => a.lateMinutes > 0).length, minutes: a.reduce((n, a) => n + (a.lateMinutes || 0), 0), rate: percent(attended.length), observationEligible: observationEligible.length, observed: observed.length, latest: observed[0]?.observations[student.id] || null, negative: observed.filter(s => negative(s.observations[student.id])).length, ...followup(data, student.id) };
 }
 export const EXPORT_FIELDS = [
-  ['first', 'Förnamn'], ['last', 'Efternamn'], ['class', 'Klass'], ['date', 'Datum'], ['time', 'Tid'], ['topic', 'Arbetsområde'], ['finalAssessment', 'Slutbedömning'], ['attendance', 'Närvaro'], ['clothes', 'Glömt kläder'], ['shoes', 'Glömt skor'], ['late', 'Sen ankomst (min)'], ['assessment', 'Observation'], ['grade', 'Lektionsbedömning'], ['note', 'Anteckning'], ['followup', 'Behov av uppföljning'],
+  ['first', 'Förnamn'], ['last', 'Efternamn'], ['class', 'Klass'], ['date', 'Datum'], ['time', 'Tid'], ['topic', 'Arbetsområde'], ['focus', 'Observationsfokus'], ['finalAssessment', 'Slutbedömning'], ['attendance', 'Närvaro'], ['clothes', 'Glömt kläder'], ['shoes', 'Glömt skor'], ['late', 'Sen ankomst (min)'], ['assessment', 'Observation'], ['grade', 'Lektionsbedömning'], ['note', 'Anteckning'], ['followup', 'Behov av uppföljning'],
 ];
 function exportValues(data, session, student) {
   const a = session.attendance[student.id] || blankAttendance();
   const o = session.skipObservation || a.absent ? {} : session.observations[student.id] || {};
-  return { first: student.first, last: student.last, class: session.className || data.classes.find(c => c.id === session.classId)?.name || '', date: session.date, time: `${session.start}–${session.end}`, topic: session.topic || '', finalAssessment: session.finalAssessment ? 'Ja' : 'Nej', attendance: a.absent ? 'Frånvarande' : 'Närvarande', clothes: a.clothes ? 'Ja' : 'Nej', shoes: a.shoes ? 'Ja' : 'Nej', late: a.lateMinutes || 0, assessment: session.skipObservation ? 'Observation avstådd' : a.absent ? 'Frånvarande' : !hasObservation(o) ? 'Ej observerad' : observationLabel(o, '; ') || 'Ingen observationsmarkering', grade: gradeLabel(o), note: o.note || '', followup: followup(data, student.id).flagged ? 'Ja' : 'Nej' };
+  return { first: student.first, last: student.last, class: session.className || data.classes.find(c => c.id === session.classId)?.name || '', date: session.date, time: `${session.start}–${session.end}`, topic: session.topic || '', focus: session.focus || '', finalAssessment: session.finalAssessment ? 'Ja' : 'Nej', attendance: a.absent ? 'Frånvarande' : 'Närvarande', clothes: a.clothes ? 'Ja' : 'Nej', shoes: a.shoes ? 'Ja' : 'Nej', late: a.lateMinutes || 0, assessment: session.skipObservation ? 'Observation avstådd' : a.absent ? 'Frånvarande' : !hasObservation(o) ? 'Ej observerad' : observationLabel(o, '; ') || 'Ingen observationsmarkering', grade: gradeLabel(o), note: o.note || '', followup: followup(data, student.id).flagged ? 'Ja' : 'Nej' };
 }
 export function exportRows(data, filters, selected) {
   const rows = [selected.map(key => EXPORT_FIELDS.find(f => f[0] === key)[1])];
@@ -265,6 +265,15 @@ export function exportRowsByStudent(data, filters, selected) {
   }
   const records = [...students.values()].sort((a, b) => a.values.class.localeCompare(b.values.class, 'sv') || a.values.last.localeCompare(b.values.last, 'sv') || a.values.first.localeCompare(b.values.first, 'sv'));
   for (const record of records) rows.push(selected.map(key => ['first','last','class','followup'].includes(key) ? record.values[key] : record.events.map(event => String(event[key] ?? '').replace(/\r\n?|\n/g, ' ↵ ') || '–').join('\n')));
+  return rows;
+}
+export function exportTermPlanRows(data, termStart, count = 24) {
+  const rows=[['Årskurs','Vecka börjar','Lektion 1','Lektion 2','Lektion 3','Lov/studiedag']],weeks=termPlanWeeks(data,7,termStart,count);
+  for(const grade of [7,8,9]) for(const week of weeks){
+    const schedules=data.classes.filter(c=>Number(c.yearGroup)===grade).flatMap(c=>data.schedules.filter(s=>s.classId===c.id&&s.day>=1&&s.day<=5));
+    const breaks=[...new Set(schedules.map(s=>scheduleBreakForDate(data,addDays(week.weekStart,s.day-1))?.label).filter(Boolean))];
+    rows.push([`Årskurs ${grade}`,week.weekStart,...[1,2,3].map(slot=>lessonPlan(data,grade,week.weekStart,slot)?.topic||''),breaks.join('; ')]);
+  }
   return rows;
 }
 function assert(condition, message) { if (!condition) throw new Error(`Säkerhetskopian är ogiltig: ${message}`); }
@@ -310,10 +319,10 @@ export function validateData(data) {
       archiveIds.add(archive.id);validateData(archive.data);
     }
   }
-  for (const s of data.schedules) { assert(isText(s.id, 100) && !scheduleIds.has(s.id) && classIds.has(s.classId) && Number.isInteger(s.day) && s.day >= 0 && s.day <= 6 && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.location, 200) && isText(s.topic, 200), 'fel i veckoschemat.'); scheduleIds.add(s.id); }
+  for (const s of data.schedules) { assert(isText(s.id, 100) && !scheduleIds.has(s.id) && classIds.has(s.classId) && Number.isInteger(s.day) && s.day >= 0 && s.day <= 6 && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.location, 200) && isText(s.topic, 200) && (s.focus === undefined || isText(s.focus, 300)), 'fel i veckoschemat.'); scheduleIds.add(s.id); }
   const lessonKeys = new Set();
   for (const s of data.sessions) {
-    assert(isText(s.id, 100) && !sessionIds.has(s.id) && classIds.has(s.classId) && isDate(s.date) && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.topic, 200) && isText(s.location, 200) && typeof s.skipObservation === 'boolean' && typeof s.complete === 'boolean' && (s.finalAssessment === undefined || typeof s.finalAssessment === 'boolean'), 'fel i en lektion.'); sessionIds.add(s.id);
+    assert(isText(s.id, 100) && !sessionIds.has(s.id) && classIds.has(s.classId) && isDate(s.date) && isTime(s.start) && isTime(s.end) && s.end > s.start && isText(s.topic, 200) && isText(s.location, 200) && (s.focus === undefined || isText(s.focus, 300)) && typeof s.skipObservation === 'boolean' && typeof s.complete === 'boolean' && (s.finalAssessment === undefined || typeof s.finalAssessment === 'boolean'), 'fel i en lektion.'); sessionIds.add(s.id);
     assert(s.cancelledAt === undefined || s.cancelledAt === null || (isText(s.cancelledAt, 40) && !Number.isNaN(Date.parse(s.cancelledAt))), 'ogiltig avbruten lektion.');
     assert(Array.isArray(s.studentIds) && s.studentIds.length <= 500 && new Set(s.studentIds).size === s.studentIds.length && isObj(s.studentNames) && isObj(s.attendance) && isObj(s.observations), 'fel i lektionslistan.');
     const members = data.classes.find(c => c.id === s.classId).students;
@@ -395,3 +404,4 @@ export function demoData(today = dateKey()) {
   data.settings.school = 'Min idrottssal';
   return data;
 }
+
