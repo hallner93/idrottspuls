@@ -1,2 +1,1 @@
-{"name":"idrottspuls","version":"1.6.0","private":true,"type":"module","description":"Lokal lektionsbok för idrottslärare","scripts":{"start":"node preview.mjs","test":"node --test tests/*.test.mjs"}}
-
+{"name":"idrottspuls","version":"1.6.1","private":true,"type":"module","description":"Lokal lektionsbok för idrottslärare","scripts":{"start":"node preview.mjs","test":"node --test tests/*.test.mjs"}}
