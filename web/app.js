@@ -1,4 +1,4 @@
-import { SCHEMA, GRADES, ASSESSMENTS, DAYS, uid, clone, dateKey, parseDate, addDays, emptyData, studentName, searchClasses, unfinishedSessions, followupSummaries, parseStudentList, validateStudentList, roster, sessionStudents, observationStudents, lessonsForDate, scheduleBreakForDate, materialize, blankAttendance, followup, flaggedStudents, filteredSessions, studentFinalAssessments, studentStats, reportedLessons, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, EXPORT_FIELDS, exportRows, exportRowsByStudent, exportTermPlanRows, parseBackup, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm } from './model.js';
+import { SCHEMA, GRADES, ASSESSMENTS, DAYS, uid, clone, dateKey, parseDate, addDays, emptyData, studentName, searchClasses, unfinishedSessions, followupSummaries, parseStudentList, validateStudentList, roster, sessionStudents, observationStudents, attendanceExceptions, lessonsForDate, scheduleBreakForDate, materialize, blankAttendance, followup, flaggedStudents, filteredSessions, studentFinalAssessments, studentStats, reportedLessons, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, EXPORT_FIELDS, exportRows, exportRowsByStudent, exportTermPlanRows, parseBackup, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm } from './model.js';
 import { loadWorkspace, persist, storageType, requestPersistence, downloadFile } from './storage.js';
 import { createXlsx } from './xlsx.js';
 import { THEMES, normalizeTheme, refreshOverviewDate, navigateToDate, returnToToday } from './preferences.js';
@@ -46,7 +46,7 @@ const formatDate = value => parseDate(value).toLocaleDateString('sv-SE',{day:'nu
 const formatFullDate = value => parseDate(value).toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
 const timeLabel = value => value ? new Date(value).toLocaleString('sv-SE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Inte skapad ännu';
 let workspace, saveTimer, saveError = '', saving = false, toastTimer, installPrompt, dateChangeTimer;
-const ui = { page: 'overview', date: dateKey(), followsToday: true, planWeek: dateKey(), planYearGroup: 7, sessionId: null, step: 'attendance', summaryTab: 'attendance', filters: { classId:'', from:'', to:dateKey() }, exportFilters:{ classId:'', from:'', to:dateKey() }, exportMode:'student', fields:EXPORT_FIELDS.map(f => f[0]), studentQuery:'', classQuery:'', archiveQuery:'', showArchived:false };
+const ui = { page: 'overview', date: dateKey(), followsToday: true, planWeek: dateKey(), planYearGroup: 7, sessionId: null, step: 'attendance', summaryTab: 'attendance', filters: { classId:'', from:'', to:dateKey() }, absenceFilters:{ classId:'', from:'', to:dateKey() }, exportFilters:{ classId:'', from:'', to:dateKey() }, exportMode:'student', fields:EXPORT_FIELDS.map(f => f[0]), studentQuery:'', classQuery:'', archiveQuery:'', showArchived:false };
 const LESSON_TEMPLATES = [
   ['volleyboll','Volleyboll','Serv, fingerslag och mottagning'],['handboll','Handboll','Passningar, skott och spelbarhet'],['basket','Basket','Bollkontroll, passningar och avslut'],['fotboll','Fotboll','Driva, passa och ta emot boll'],['innebandy','Innebandy','Klubba, bollkontroll och samspel'],['gymnastik','Gymnastik','Balans, kroppskontroll och säkerhet'],['dans','Dans','Rytm, rörelse och samarbete'],['friidrott','Friidrott','Teknik, rytm och individuell utveckling'],['styrka','Styrka och hälsa','Rörelsekvalitet, styrka och säkerhet'],['eget','Eget område','']
 ].map(([id,topic,focus])=>({id,topic,focus}));
@@ -69,8 +69,8 @@ async function save() {
   finally { saving = false; updateSaveIndicator(); const alert = document.querySelector('#storage-alert'); if (alert) { alert.hidden = !saveError; alert.textContent = saveError ? `Sparningen misslyckades: ${saveError}. Behåll appen öppen. Exportera en säkerhetskopia eller frigör lagringsutrymme och försök spara igen.` : ''; } }
 }
 function queueSave() { saving = true; updateSaveIndicator(); clearTimeout(saveTimer); saveTimer = setTimeout(() => save().catch(() => {}), 250); }
-const navItems = [['overview','grid','Översikt'],['schedule','calendar','Veckoschema'],['plan','book','Terminsplanering'],['classes','users','Klasser & elever'],['summary','chart','Sammanställning'],['export','download','Export & backup']];
-const pageTitles = {overview:'Översikt',schedule:'Veckoschema',plan:'Terminsplanering',classes:'Klasser & elever',summary:'Sammanställning',export:'Export & backup',settings:'Inställningar',lesson:'Pågående lektion'};
+const navItems = [['overview','grid','Översikt'],['schedule','calendar','Veckoschema'],['plan','book','Terminsplanering'],['classes','users','Klasser & elever'],['absence','checkcircle','Frånvaro'],['summary','chart','Sammanställning'],['export','download','Export & backup']];
+const pageTitles = {overview:'Översikt',schedule:'Veckoschema',plan:'Terminsplanering',classes:'Klasser & elever',absence:'Frånvaro',summary:'Sammanställning',export:'Export & backup',settings:'Inställningar',lesson:'Pågående lektion'};
 function render() {
   if (!workspace) return;
   document.documentElement.dataset.theme = normalizeTheme(data().settings.theme);
@@ -80,7 +80,7 @@ function render() {
 }
 function applyProgress() { document.querySelectorAll('[data-progress]').forEach(el => el.style.setProperty('--progress', `${Math.max(0,Math.min(100,Number(el.dataset.progress)||0))}%`)); }
 function heading(title, subtitle, actions = '') { return `<div class="page-heading"><div><h1>${title}</h1><p>${subtitle}</p></div>${actions ? `<div class="heading-actions">${actions}</div>` : ''}</div>`; }
-function renderPage() { switch(ui.page) { case 'schedule':return renderSchedule();case 'plan':return renderPlanning();case 'classes':return renderClasses();case 'summary':return renderSummary();case 'export':return renderExport();case 'settings':return renderSettings();case 'lesson':return renderLesson();default:return renderOverview(); } }
+function renderPage() { switch(ui.page) { case 'schedule':return renderSchedule();case 'plan':return renderPlanning();case 'classes':return renderClasses();case 'absence':return renderAbsence();case 'summary':return renderSummary();case 'export':return renderExport();case 'settings':return renderSettings();case 'lesson':return renderLesson();default:return renderOverview(); } }
 function weekNumber(value) { const d = parseDate(value); d.setDate(d.getDate()+4-(d.getDay()||7)); const first = new Date(d.getFullYear(),0,1); return Math.ceil((((d-first)/86400000)+1)/7); }
 function renderOverview() {
   const d = data(), lessons = lessonsForDate(d,ui.date), followups = followupSummaries(d), flags = flaggedStudents(d,followups), paused = scheduleBreakForDate(d,ui.date);
@@ -161,6 +161,12 @@ function renderStudentTiles(s,students) {
 }
 function filterForm(filters, prefix) {
   return `<div class="toolbar"><div class="field"><label for="${prefix}-class">Klass</label><select id="${prefix}-class" data-filter="classId" data-scope="${prefix}"><option value="">Alla klasser</option>${data().classes.map(c=>`<option value="${esc(c.id)}" ${filters.classId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label for="${prefix}-from">Från och med</label><input type="date" id="${prefix}-from" data-filter="from" data-scope="${prefix}" value="${esc(filters.from)}"></div><div class="field"><label for="${prefix}-to">Till och med</label><input type="date" id="${prefix}-to" data-filter="to" data-scope="${prefix}" value="${esc(filters.to)}"></div></div>`;
+}
+function renderAbsence() {
+  const sessions=filteredSessions(data(),ui.absenceFilters),reports=sessions.map(session=>({session,exceptions:attendanceExceptions(data(),session)}));
+  const count=key=>reports.reduce((total,report)=>total+report.exceptions[key].length,0);
+  const names=list=>list.length?`<strong>${list.length}</strong><div>${list.map(esc).join('<br>')}</div>`:'<span class="muted">Ingen</span>';
+  return `${heading('Frånvaro & utrustning','Se frånvaro, glömda kläder och skor per lektion utan att öppna lektionsvyn.')}<div class="stats"><div class="stat"><div class="stat-icon">${icon('circle',22)}</div><div><div class="stat-label">Frånvaromarkeringar</div><div class="stat-value">${count('absent')}</div></div></div><div class="stat"><div class="stat-icon">${icon('users',22)}</div><div><div class="stat-label">Glömda kläder</div><div class="stat-value">${count('clothes')}</div></div></div><div class="stat"><div class="stat-icon">${icon('pin',22)}</div><div><div class="stat-label">Glömda skor</div><div class="stat-value">${count('shoes')}</div></div></div></div>${filterForm(ui.absenceFilters,'absence')}<p class="helper section-space">${sessions.length} lektioner med sparad närvaro · nyaste först. Visar endast avvikelser.</p><div class="table-wrap section-space"><table class="data-table"><thead><tr><th>Lektion</th><th>Frånvarande</th><th>Glömt kläder</th><th>Glömt skor</th></tr></thead><tbody>${reports.map(({session,exceptions})=>`<tr><td><strong>${esc(session.className||getClass(session.classId)?.name||'Klass')}</strong><br><small>${esc(formatFullDate(session.date))} · ${esc(session.start)}–${esc(session.end)}</small><br><small class="muted">${esc(session.topic||'Idrott & hälsa')}</small></td><td>${names(exceptions.absent)}</td><td>${names(exceptions.clothes)}</td><td>${names(exceptions.shoes)}</td></tr>`).join('')||`<tr><td colspan="4">Inga sparade lektioner matchar filtret.</td></tr>`}</tbody></table></div>`;
 }
 function renderSummary() {
   const sessions=filteredSessions(data(),ui.filters), students=data().classes.filter(c=>!ui.filters.classId||c.id===ui.filters.classId).flatMap(c=>roster(data(),c.id,ui.showArchived).map(s=>({...s,className:c.name}))), observation=ui.summaryTab==='observation';
@@ -311,7 +317,7 @@ async function finishTermBreak(nextStart) {
   const mode=workspace.active,previous=workspace[mode],next=clone(previous),archive=transitionTerm(next,nextStart,mode);
   workspace[mode]=next;
   try { await save(); } catch (error) { workspace[mode]=previous;throw error; }
-  ui.filters={classId:'',from:nextStart,to:dateKey()};ui.exportFilters={...ui.filters};ui.planWeek=weekStartDate(nextStart);modal.close();
+  ui.filters={classId:'',from:nextStart,to:dateKey()};ui.absenceFilters={...ui.filters};ui.exportFilters={...ui.filters};ui.planWeek=weekStartDate(nextStart);modal.close();
   await navigate('overview');toast(`${archive.label} är arkiverad. Den nya terminen har startat.`);
 }
 async function requestTermBreak(nextStart) {
@@ -373,8 +379,8 @@ async function performAction(action,el) {
     case 'export-xlsx': {if(ui.exportFilters.from&&ui.exportFilters.to&&ui.exportFilters.from>ui.exportFilters.to)throw new Error('Startdatum måste ligga före slutdatum.');const makeRows=ui.exportMode==='student'?exportRowsByStudent:exportRows,rows=makeRows(data(),ui.exportFilters,ui.fields);if(rows.length<2)throw new Error('Inga sparade lektioner i perioden.');const format=ui.exportMode==='student'?'per-elev':'per-lektion';const result=await downloadFile(`Idrottspuls-${workspace.active==='demo'?'DEMO-':''}${dateKey()}-${format}.xlsx`,createXlsx(rows,workspace.active==='demo'?'Demodata':'Idrottspuls'),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');toast(result.message);break;}
     case 'backup':await backup();break;
     case 'choose-restore':document.querySelector('#restore-file').click();break;
-    case 'real-mode':confirmDialog('Börja med din egen lektionsbok',workspace.real.classes.length?'Din egen sparade lektionsbok öppnas. Demodata ligger kvar separat.':'Du börjar med en tom lektionsbok. Demodata ligger kvar separat så att du kan prova igen.','Öppna egen lektionsbok',async()=>{workspace.active='real';ui.filters.from=data().settings.termStart;ui.exportFilters.from=data().settings.termStart;await save();await navigate(data().classes.length?'overview':'classes');toast('Din egen lektionsbok är öppen.');});break;
-    case 'switch-mode':if(workspace.active==='demo')await performAction('real-mode',el);else{workspace.active='demo';ui.filters={classId:'',from:data().settings.termStart,to:dateKey()};ui.exportFilters={...ui.filters};await save();await navigate('overview');toast('Du visar nu separat demodata.');}break;
+    case 'real-mode':confirmDialog('Börja med din egen lektionsbok',workspace.real.classes.length?'Din egen sparade lektionsbok öppnas. Demodata ligger kvar separat.':'Du börjar med en tom lektionsbok. Demodata ligger kvar separat så att du kan prova igen.','Öppna egen lektionsbok',async()=>{workspace.active='real';ui.filters.from=data().settings.termStart;ui.absenceFilters.from=data().settings.termStart;ui.exportFilters.from=data().settings.termStart;await save();await navigate(data().classes.length?'overview':'classes');toast('Din egen lektionsbok är öppen.');});break;
+    case 'switch-mode':if(workspace.active==='demo')await performAction('real-mode',el);else{workspace.active='demo';ui.filters={classId:'',from:data().settings.termStart,to:dateKey()};ui.absenceFilters={...ui.filters};ui.exportFilters={...ui.filters};await save();await navigate('overview');toast('Du visar nu separat demodata.');}break;
     case 'persist-storage': {const ok=await requestPersistence();toast(ok?'Enheten har godkänt beständig lokal lagring.':'Webbläsaren garanterar inte beständig lagring. Säkerhetskopiera regelbundet.',!ok);break;}
     case 'install':if(installPrompt){await installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;render();}break;
   }
@@ -403,7 +409,7 @@ document.addEventListener('change',async event=>{
     if(el.id==='plan-week'&&el.value){ui.planWeek=weekStartDate(el.value);render();}
     if(el.dataset.sessionField==='skipObservation'){getSession().skipObservation=el.checked;await save();render();}
     if(el.dataset.sessionField==='finalAssessment'){getSession().finalAssessment=el.checked;await save();if(ui.step==='observation')render();}
-    if(el.dataset.filter){const filters=el.dataset.scope==='export'?ui.exportFilters:ui.filters;filters[el.dataset.filter]=el.value;if(filters.from&&filters.to&&filters.from>filters.to)toast('Startdatum ligger efter slutdatum. Ändra perioden.',true);render();}
+    if(el.dataset.filter){const filters=el.dataset.scope==='export'?ui.exportFilters:el.dataset.scope==='absence'?ui.absenceFilters:ui.filters;filters[el.dataset.filter]=el.value;if(filters.from&&filters.to&&filters.from>filters.to)toast('Startdatum ligger efter slutdatum. Ändra perioden.',true);render();}
     if(el.dataset.exportMode){ui.exportMode=el.value==='lesson'?'lesson':'student';render();}
     if(el.dataset.exportField){if(el.checked)ui.fields=EXPORT_FIELDS.map(f=>f[0]).filter(k=>ui.fields.includes(k)||k===el.dataset.exportField);else ui.fields=ui.fields.filter(k=>k!==el.dataset.exportField);render();}
     if(el.id==='break-kind'){
@@ -411,7 +417,7 @@ document.addEventListener('change',async event=>{
        if(end && input){end.style.display=el.value==='range'?'grid':'none';input.required=el.value==='range';}
      }
      if(el.dataset.settingUi==='showArchived'){ui.showArchived=el.checked;render();}
-    if(el.id==='restore-file'&&el.files[0]){const file=el.files[0];if(file.size>20000000)throw new Error('Säkerhetskopian är för stor (max 20 MB).');const backup=parseBackup(await file.text());confirmDialog('Återställ lektionsboken?',`Filen innehåller <strong>${backup.data.classes.length} klasser och ${backup.data.sessions.length} lektioner</strong>${backup.mode==='demo'?' med demodata':''}. Den ersätter din nuvarande ${backup.mode==='demo'?'demodata':'egna lektionsbok'}. Skapa en säkerhetskopia av nuvarande uppgifter först om du vill behålla dem.`,'Återställ kopian',async()=>{workspace[backup.mode]=backup.data;workspace.active=backup.mode;ui.filters={classId:'',from:data().settings.termStart,to:dateKey()};ui.exportFilters={...ui.filters};await save();await navigate('overview');toast('Säkerhetskopian är återställd.');});el.value='';}
+    if(el.id==='restore-file'&&el.files[0]){const file=el.files[0];if(file.size>20000000)throw new Error('Säkerhetskopian är för stor (max 20 MB).');const backup=parseBackup(await file.text());confirmDialog('Återställ lektionsboken?',`Filen innehåller <strong>${backup.data.classes.length} klasser och ${backup.data.sessions.length} lektioner</strong>${backup.mode==='demo'?' med demodata':''}. Den ersätter din nuvarande ${backup.mode==='demo'?'demodata':'egna lektionsbok'}. Skapa en säkerhetskopia av nuvarande uppgifter först om du vill behålla dem.`,'Återställ kopian',async()=>{workspace[backup.mode]=backup.data;workspace.active=backup.mode;ui.filters={classId:'',from:data().settings.termStart,to:dateKey()};ui.absenceFilters={...ui.filters};ui.exportFilters={...ui.filters};await save();await navigate('overview');toast('Säkerhetskopian är återställd.');});el.value='';}
   }catch(e){toast(e.message,true);}
 });
 document.addEventListener('submit',async event=>{
@@ -463,7 +469,7 @@ window.addEventListener('pageshow',refreshDisplayedDate);
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;render();});
 window.addEventListener('error',event=>{if(workspace)toast('Något gick fel. Dina redan sparade uppgifter finns kvar. Öppna översikten och försök igen.',true);});
 try {
-  workspace=await loadWorkspace();ui.filters.from=data().settings.termStart;ui.exportFilters.from=data().settings.termStart;
+  workspace=await loadWorkspace();ui.filters.from=data().settings.termStart;ui.absenceFilters.from=data().settings.termStart;ui.exportFilters.from=data().settings.termStart;
   // A browser tab holds the write lock for its lifetime. A second tab stays read-only.
   if(navigator.locks&&!window.IdrottspulsNative){
     let decide;const ready=new Promise(resolve=>decide=resolve);

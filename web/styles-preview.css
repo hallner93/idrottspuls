@@ -55,3 +55,5 @@ html.preview-ui dialog{border-radius:9px}
 @media(max-width:980px){html.preview-ui .sidebar{background:#183b31}html.preview-ui .app-shell{grid-template-columns:78px minmax(0,1fr)}html.preview-ui .content{padding:26px 25px 34px}}
 @media(max-width:790px){html.preview-ui .dashboard-grid{grid-template-columns:1fr}html.preview-ui .dashboard-aside{display:grid;grid-template-columns:1fr 1fr;gap:13px}}
 @media(max-width:590px){html.preview-ui .app-shell{display:block}html.preview-ui .sidebar{background:#183b31;border-top:1px solid #35564a}html.preview-ui .sidebar .nav-link{color:#d4ddd4}html.preview-ui .sidebar .nav-link.active{background:#365b4c;color:#fff}html.preview-ui .topbar{background:#f8f7f1}html.preview-ui .content{padding:22px 16px 20px}html.preview-ui h1{font-size:29px}html.preview-ui .page-heading{align-items:start}html.preview-ui .dashboard-aside{display:block}html.preview-ui .followup-card{margin-top:10px}html.preview-ui .lesson-card{grid-template-columns:49px minmax(0,1fr);gap:8px}html.preview-ui .lesson-body{padding:15px 13px}}
+
+@media(max-width:590px){html.preview-ui .sidebar .nav-link{min-width:40px;padding-left:5px;padding-right:5px}}
