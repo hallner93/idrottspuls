@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -156,6 +156,18 @@ test('Final assessment is stored per lesson, appears in both Excel layouts and e
   assert.deepEqual(studentFinalAssessments(d,'s2'),[second]);
   assert.deepEqual(exportRows(d,{},['first','date','finalAssessment']).filter(row=>row[0]==='Åsa'),[['Åsa','2026-10-01','Nej'],['Åsa','2026-10-08','Ja']]);
   assert.deepEqual(exportRowsByStudent(d,{},['first','date','finalAssessment']).find(row=>row[0]==='Åsa'),['Åsa','2026-10-01\n2026-10-08','Nej\nJa']);
+});
+test('Absent pupils stay out of observation unless final assessment is enabled, then are clearly identified and their final observations export',()=>{
+  const d=fixture(),s=lesson(d,'2026-10-01');s.attendance.s2.absent=true;s.observations.s2={assessments:['good'],grades:['B'],note:'Slutlig teknikbedömning'};
+  assert.deepEqual(observationStudents(d,s).map(student=>student.id),['s1']);
+  const ordinary=exportRows(d,{},['first','attendance','assessment','grade','finalObservation']);
+  assert.deepEqual(ordinary.find(row=>row[0]==='Amir'),['Amir','Frånvarande','Frånvarande','','']);
+  s.finalAssessment=true;
+  assert.deepEqual(observationStudents(d,s).map(student=>student.id),['s2','s1']);
+  const final=exportRows(d,{},['first','attendance','assessment','grade','note','finalAssessment','finalObservation']);
+  assert.deepEqual(final.find(row=>row[0]==='Amir'),['Amir','Frånvarande','Bra','B','Slutlig teknikbedömning','Ja','B · Bra · Slutlig teknikbedömning']);
+  const studentRows=exportRowsByStudent(d,{},['first','finalObservation']);
+  assert.deepEqual(studentRows.find(row=>row[0]==='Amir'),['Amir','B · Bra · Slutlig teknikbedömning']);
 });
 test('Older lesson records migrate to an unmarked final-assessment value and invalid values are rejected',()=>{
   const d=fixture(),session=lesson(d,'2026-10-01');delete session.finalAssessment;
