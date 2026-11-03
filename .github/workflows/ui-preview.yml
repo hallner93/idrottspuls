@@ -1,0 +1,61 @@
+name: Förhandsvisning av nytt utseende
+run-name: Idrottspuls UI-förhandsvisning – ${{ github.run_number }}
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: idrottspuls-ui-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  preview:
+    name: Testa och bygg fristående förhandsapp
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
+    steps:
+      - name: Hämta projektet
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Välj Java 17 och kontrollera Androidverktyg
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${JAVA_HOME_17_X64:-}" ] || [ ! -x "$JAVA_HOME_17_X64/bin/java" ]; then
+            echo "::error::Java 17 saknas i byggmiljön."
+            exit 1
+          fi
+          if [ -z "${ANDROID_HOME:-}" ] || [ ! -f "$ANDROID_HOME/platforms/android-36/android.jar" ]; then
+            echo "::error::Android SDK 36 saknas i byggmiljön."
+            exit 1
+          fi
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
+          echo "81a82aaea5abcc8ff68b3dfcb58b3c3c429378efd98e7433460610fecd7ae45f  android/gradle/wrapper/gradle-wrapper.jar" | sha256sum --check
+      - name: Kör regressionstester
+        run: node --test tests/*.test.mjs
+      - name: Bygg separat förhandsapp
+        working-directory: android
+        run: sh ./gradlew --no-daemon --console=plain :app:assemblePreview
+      - name: Verifiera och paketera APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=android/app/build/outputs/apk/preview/app-preview.apk
+          test -s "$apk"
+          apksigner=$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)
+          test -n "$apksigner" && test -x "$apksigner"
+          "$apksigner" verify "$apk"
+          mkdir -p build-preview
+          cp "$apk" build-preview/Idrottspuls-Forhandsvisning.apk
+          (cd build-preview && sha256sum Idrottspuls-Forhandsvisning.apk > SHA256SUMS.txt)
+      - name: Publicera förhandsversionen som artefakt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Idrottspuls-UI-Förhandsvisning-${{ github.run_number }}
+          path: build-preview/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

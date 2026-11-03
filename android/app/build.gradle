@@ -28,6 +28,13 @@ android {
             applicationIdSuffix '.test'
             resValue 'string', 'app_name', 'Idrottspuls'
         }
+        preview {
+            applicationIdSuffix '.preview'
+            versionNameSuffix '-preview'
+            debuggable true
+            signingConfig signingConfigs.debug
+            resValue 'string', 'app_name', 'Idrottspuls Förhandsvisning'
+        }
         release {
             minifyEnabled false
             signingConfig signingConfigs.release
