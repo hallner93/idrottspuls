@@ -3,6 +3,7 @@ import { loadWorkspace, persist, storageType, requestPersistence, downloadFile }
 import { createXlsx } from './xlsx.js';
 import { THEMES, normalizeTheme, refreshOverviewDate, navigateToDate, returnToToday } from './preferences.js';
 
+if (new URLSearchParams(location.search).get('preview') === '1') document.documentElement.classList.add('preview-ui');
 const root = document.querySelector('#app'), modal = document.querySelector('#modal');
 const esc = value => String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const icons = {

@@ -1,0 +1,57 @@
+@charset "UTF-8";
+/* Design-only layer. Production never sets .preview-ui. */
+html.preview-ui{--bg:#f5f4ee;--surface:#fffefa;--ink:#25332e;--muted:#737c75;--line:#d9ddd4;--green:#24483b;--sage:#dfe6dc;--coral:#b96e52;--coral-light:#f7ebe4;--amber:#8b632d;--amber-light:#f3ead9;--red:#a84d43;--radius:9px;font-family:Inter,"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink)}
+html.preview-ui body{background:var(--bg)}
+html.preview-ui h1{font-family:Georgia,"Times New Roman",serif;font-size:36px;font-weight:600;letter-spacing:-.7px;color:#203b32}
+html.preview-ui h2{font-size:19px;letter-spacing:-.2px;font-weight:650}
+html.preview-ui .app-shell{grid-template-columns:226px minmax(0,1fr)}
+html.preview-ui .sidebar{background:#183b31;color:#f4f3eb;border-right:0;padding:28px 17px 18px}
+html.preview-ui .brand{color:#fbfaf5}
+html.preview-ui .brand img{filter:brightness(0) invert(1);opacity:.9}
+html.preview-ui .brand-note,html.preview-ui .nav-caption{color:#bcc9bd}
+html.preview-ui .nav-caption{letter-spacing:1.35px}
+html.preview-ui .nav-link{color:#d4ddd4;border-radius:5px;min-height:45px}
+html.preview-ui .nav-link:hover{background:#23483c}
+html.preview-ui .nav-link.active{background:#365b4c;color:#fff;font-weight:650}
+html.preview-ui .nav-link.active:before{background:#c57a5b;left:-17px}
+html.preview-ui .local-card{background:#203f35;border-color:#35564a;color:#eff2e8;border-radius:6px}
+html.preview-ui .local-card p,html.preview-ui .profile small{color:#bfcbc0}
+html.preview-ui .avatar{background:#dfe6dc;color:#24483b}
+html.preview-ui .topbar{background:#f8f7f1;border-color:var(--line)}
+html.preview-ui .content{max-width:1540px;padding:32px 38px 38px}
+html.preview-ui .page-heading{align-items:end;margin-bottom:25px}
+html.preview-ui .page-heading p{color:#747d76}
+html.preview-ui .btn{border-radius:6px;font-weight:620;box-shadow:none}
+html.preview-ui .btn.primary{background:#24483b;border-color:#24483b}
+html.preview-ui .btn.primary:hover{background:#1b3b30}
+html.preview-ui .btn.coral{background:#b96e52;border-color:#b96e52}
+html.preview-ui .icon-btn{border-radius:6px}
+html.preview-ui .dashboard-grid{grid-template-columns:minmax(0,1fr) 300px;gap:30px}
+html.preview-ui .section-title{margin-bottom:13px}
+html.preview-ui .date-nav .icon-btn{border:1px solid var(--line);background:var(--surface)}
+html.preview-ui .week-strip{background:transparent;padding:0;gap:8px;margin-bottom:19px}
+html.preview-ui .day-button{background:#fffefa;border:1px solid #d6dbd1;border-radius:5px;min-height:55px;color:#68736a}
+html.preview-ui .day-button.selected{background:#b96e52;color:white;border-color:#b96e52;box-shadow:none}
+html.preview-ui .day-button.today:not(.selected) strong{color:#24483b}
+html.preview-ui .lesson-card{grid-template-columns:68px minmax(0,1fr);gap:12px;margin-bottom:12px}
+html.preview-ui .time-column{padding-top:18px;color:#33443b}
+html.preview-ui .time-column:after{background:#d5d9d0}
+html.preview-ui .lesson-body{background:#fffefa;border:1px solid #d7dcd2;border-left:3px solid #879b89;border-radius:6px;padding:17px 18px;box-shadow:none}
+html.preview-ui .lesson-body:hover{box-shadow:0 3px 10px #1b35270c}
+html.preview-ui .class-label{font-size:18px;letter-spacing:-.15px}
+html.preview-ui .lesson-topic{font-size:13px;color:#34453c;margin-bottom:11px}
+html.preview-ui .lesson-meta{font-size:11px;gap:16px}
+html.preview-ui .lesson-card-bottom{margin-top:12px;padding-top:11px;border-color:#e7e8e1}
+html.preview-ui .card{border-color:#d9ddd4;border-radius:7px;box-shadow:none}
+html.preview-ui .followup-card,html.preview-ui .unfinished-card{padding:17px 16px}
+html.preview-ui .followup-title{font-size:13px}
+html.preview-ui .followup-person{padding:10px 0}
+html.preview-ui .followup-person .avatar{width:32px;height:32px}
+html.preview-ui .unfinished-lesson{padding:9px 0}
+html.preview-ui .bottom-note{color:#7b827b}
+html.preview-ui .badge{border-radius:4px}
+html.preview-ui .modal-header,html.preview-ui .modal-footer{background:#f8f7f1}
+html.preview-ui dialog{border-radius:9px}
+@media(max-width:980px){html.preview-ui .sidebar{background:#183b31}html.preview-ui .app-shell{grid-template-columns:78px minmax(0,1fr)}html.preview-ui .content{padding:26px 25px 34px}}
+@media(max-width:790px){html.preview-ui .dashboard-grid{grid-template-columns:1fr}html.preview-ui .dashboard-aside{display:grid;grid-template-columns:1fr 1fr;gap:13px}}
+@media(max-width:590px){html.preview-ui .app-shell{display:block}html.preview-ui .sidebar{background:#183b31;border-top:1px solid #35564a}html.preview-ui .sidebar .nav-link{color:#d4ddd4}html.preview-ui .sidebar .nav-link.active{background:#365b4c;color:#fff}html.preview-ui .topbar{background:#f8f7f1}html.preview-ui .content{padding:22px 16px 20px}html.preview-ui h1{font-size:29px}html.preview-ui .page-heading{align-items:start}html.preview-ui .dashboard-aside{display:block}html.preview-ui .followup-card{margin-top:10px}html.preview-ui .lesson-card{grid-template-columns:49px minmax(0,1fr);gap:8px}html.preview-ui .lesson-body{padding:15px 13px}}
