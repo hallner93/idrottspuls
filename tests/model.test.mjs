@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents, attendanceExceptions } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -136,6 +136,10 @@ test('Deleting or editing a schedule preserves already materialized lessons',()=
 });
 test('Summary excludes unsaved attendance, computes rates and retains distinct equipment flags',()=>{
   const d=fixture();const first=lesson(d,'2026-10-01');first.attendance.s1={absent:false,clothes:true,shoes:false,lateMinutes:7};const second=lesson(d,'2026-10-02');second.attendance.s1.absent=true;const third=lesson(d,'2026-10-03');third.attendanceSavedAt=null;const stats=studentStats(d,d.classes[0].students[0],filteredSessions(d),new Date(2026,9,22,12));assert.equal(stats.total,2);assert.equal(stats.rate,50);assert.equal(stats.clothes,1);assert.equal(stats.shoes,0);assert.equal(stats.minutes,7);
+});
+test('Per-lesson absence and equipment view returns only the three requested exceptions',()=>{
+  const d=fixture(),s=lesson(d,'2026-10-01');s.attendance.s1={...blankAttendance(),absent:true};s.attendance.s2={...blankAttendance(),clothes:true,shoes:true};
+  assert.deepEqual(attendanceExceptions(d,s),{absent:['Åsa Öberg'],clothes:['Amir Andersson'],shoes:['Amir Andersson']});
 });
 test('Exports respect chosen columns, date and class filters and do not grade absent pupils',()=>{
   const d=fixture(),s=lesson(d,'2026-10-01');s.attendance.s1.absent=true;const rows=exportRows(d,{from:'2026-10-01',to:'2026-10-01',classId:'c1'},['last','first','grade','late']);assert.equal(rows.length,3);assert.deepEqual(rows.find(r=>r[0]==='Öberg'),['Öberg','Åsa','',0]);assert.equal(exportRows(d,{from:'2026-10-02'},['first']).length,1);

@@ -104,6 +104,11 @@ export function sessionStudents(data, session) {
 export function observationStudents(data, session) {
   return sessionStudents(data, session).filter(student => session.finalAssessment || !session.attendance[student.id]?.absent);
 }
+export function attendanceExceptions(data, session) {
+  const students = sessionStudents(data, session);
+  const namesFor = key => students.filter(student => session.attendance[student.id]?.[key]).map(studentName);
+  return { absent: namesFor('absent'), clothes: namesFor('clothes'), shoes: namesFor('shoes') };
+}
 export function scheduleBreakForDate(data, date) {
   return (data.breaks || []).find(b => b.start <= date && date <= b.end) || null;
 }
