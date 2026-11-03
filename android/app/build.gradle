@@ -3,6 +3,9 @@ plugins { id 'com.android.application' }
 android {
     namespace 'se.idrottspuls.app'
     compileSdk 36
+    buildFeatures {
+        buildConfig true
+    }
     defaultConfig {
         applicationId 'se.idrottspuls.app'
         minSdk 26
@@ -49,4 +52,3 @@ tasks.register('syncWebAssets', Copy) {
 }
 tasks.named('preBuild').configure { dependsOn 'syncWebAssets' }
 dependencies { implementation 'androidx.webkit:webkit:1.14.0' }
-
