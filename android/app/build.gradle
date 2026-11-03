@@ -3,6 +3,9 @@ plugins { id 'com.android.application' }
 android {
     namespace 'se.idrottspuls.app'
     compileSdk 36
+    buildFeatures {
+        buildConfig true
+    }
     defaultConfig {
         applicationId 'se.idrottspuls.app'
         minSdk 26
