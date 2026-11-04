@@ -107,7 +107,7 @@ export function observationStudents(data, session) {
 export function attendanceExceptions(data, session) {
   const students = sessionStudents(data, session);
   const namesFor = key => students.filter(student => session.attendance[student.id]?.[key]).map(studentName);
-  return { absent: namesFor('absent'), clothes: namesFor('clothes'), shoes: namesFor('shoes') };
+  return { absent: namesFor('absent'), clothes: namesFor('clothes'), shoes: namesFor('shoes'), injured: namesFor('injured') };
 }
 export function scheduleBreakForDate(data, date) {
   return (data.breaks || []).find(b => b.start <= date && date <= b.end) || null;
@@ -182,7 +182,7 @@ export function materialize(data, lesson) {
   data.sessions.push(session);
   return session;
 }
-export const blankAttendance = () => ({ absent: false, clothes: false, shoes: false, lateMinutes: 0 });
+export const blankAttendance = () => ({ absent: false, clothes: false, shoes: false, injured: false, lateMinutes: 0 });
 export function negative(o) { return observationGrades(o).includes('F') || observationAssessments(o).some(id => ['below', 'failed', 'notparticipating'].includes(id)); }
 export function followup(data, studentId) {
   const student = data.classes.flatMap(c => c.students).find(s => s.id === studentId);
@@ -243,9 +243,9 @@ export function studentStats(data, student, sessions, now = new Date()) {
   const observationEligible = recorded.filter(s => !s.attendance[student.id]?.absent);
   const observed = observationEligible.filter(s => !s.skipObservation && hasObservation(s.observations[student.id]));
   const a = relevant.map(s => s.attendance[student.id] || blankAttendance());
-  const absent = a.filter(a => a.absent).length, clothes = a.filter(a => a.clothes).length, shoes = a.filter(a => a.shoes).length;
+  const absent = a.filter(a => a.absent).length, clothes = a.filter(a => a.clothes).length, shoes = a.filter(a => a.shoes).length, injured = a.filter(a => a.injured).length;
   const percent = count => relevant.length ? Math.round(count / relevant.length * 100) : null;
-  return { total: relevant.length, present: attended.length, absent, clothes, shoes, absentRate: percent(absent), clothesRate: percent(clothes), shoesRate: percent(shoes), late: a.filter(a => a.lateMinutes > 0).length, minutes: a.reduce((n, a) => n + (a.lateMinutes || 0), 0), rate: percent(attended.length), observationEligible: observationEligible.length, observed: observed.length, latest: observed[0]?.observations[student.id] || null, negative: observed.filter(s => negative(s.observations[student.id])).length, ...followup(data, student.id) };
+  return { total: relevant.length, present: attended.length, absent, clothes, shoes, injured, absentRate: percent(absent), clothesRate: percent(clothes), shoesRate: percent(shoes), late: a.filter(a => a.lateMinutes > 0).length, minutes: a.reduce((n, a) => n + (a.lateMinutes || 0), 0), rate: percent(attended.length), observationEligible: observationEligible.length, observed: observed.length, latest: observed[0]?.observations[student.id] || null, negative: observed.filter(s => negative(s.observations[student.id])).length, ...followup(data, student.id) };
 }
 export const EXPORT_FIELDS = [
   ['first', 'Förnamn'], ['last', 'Efternamn'], ['class', 'Klass'], ['date', 'Datum'], ['time', 'Tid'], ['topic', 'Arbetsområde'], ['focus', 'Observationsfokus'], ['finalAssessment', 'Slutbedömning markerad'], ['finalObservation', 'Slutbedömning'], ['attendance', 'Närvaro'], ['clothes', 'Glömt kläder'], ['shoes', 'Glömt skor'], ['late', 'Sen ankomst (min)'], ['assessment', 'Observation'], ['grade', 'Lektionsbedömning'], ['note', 'Anteckning'], ['followup', 'Behov av uppföljning'],
@@ -340,7 +340,7 @@ export function validateData(data) {
     assert(s.attendanceSavedAt === null || (isText(s.attendanceSavedAt, 40) && !Number.isNaN(Date.parse(s.attendanceSavedAt))), 'fel i närvarons sparning.');
     for (const record of [s.attendance, s.attendanceDraft || {}]) {
       assert(isObj(record), 'fel i närvaroutkast.');
-      for (const [id, a] of Object.entries(record)) assert(s.studentIds.includes(id) && isObj(a) && ['absent','clothes','shoes'].every(k => typeof a[k] === 'boolean') && Number.isInteger(a.lateMinutes) && a.lateMinutes >= 0 && a.lateMinutes <= 600, 'felaktig närvaro.');
+      for (const [id, a] of Object.entries(record)) assert(s.studentIds.includes(id) && isObj(a) && ['absent','clothes','shoes'].every(k => typeof a[k] === 'boolean') && (a.injured === undefined || typeof a.injured === 'boolean') && Number.isInteger(a.lateMinutes) && a.lateMinutes >= 0 && a.lateMinutes <= 600, 'felaktig närvaro.');
     }
     if (s.attendanceSavedAt) assert(s.studentIds.every(id => s.attendance[id]), 'bekräftad närvaro saknar elever.');
     for (const [id, o] of Object.entries(s.observations)) {
@@ -360,7 +360,7 @@ export function upgradeData(data) {
   upgraded.termArchives ??= [];
   for (const c of upgraded.classes) c.yearGroup ??= null;
   upgraded.settings.theme ??= 'green';
-  for (const session of upgraded.sessions) session.finalAssessment ??= false;
+  for (const session of upgraded.sessions) { session.finalAssessment ??= false; for (const record of [session.attendance, session.attendanceDraft || {}]) for (const attendance of Object.values(record || {})) attendance.injured ??= false; }
   for (const session of upgraded.sessions) for (const [id, o] of Object.entries(session.observations)) {
     const { assessment, grade, ...rest } = o;
     session.observations[id] = { ...rest, assessments: observationAssessments(o), grades: observationGrades(o) };
