@@ -3,6 +3,9 @@ plugins { id 'com.android.application' }
 android {
     namespace 'se.idrottspuls.app'
     compileSdk 36
+    buildFeatures {
+        buildConfig true
+    }
     defaultConfig {
         applicationId 'se.idrottspuls.app'
         minSdk 26
@@ -16,6 +19,13 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     signingConfigs {
+        coach {
+            applicationIdSuffix '.coach'
+            versionNameSuffix '-coach'
+            debuggable true
+            signingConfig signingConfigs.debug
+            resValue 'string', 'app_name', 'Tränarpuls'
+        }
         release {
             storeFile file(System.getenv('IDROTTSPULS_KEYSTORE_PATH') ?: 'signing-key-missing.jks')
             storePassword System.getenv('IDROTTSPULS_KEYSTORE_PASSWORD') ?: ''
