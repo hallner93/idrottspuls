@@ -104,10 +104,12 @@ export function sessionStudents(data, session) {
 export function observationStudents(data, session) {
   return sessionStudents(data, session).filter(student => session.finalAssessment || !session.attendance[student.id]?.absent);
 }
-export function attendanceExceptions(data, session) {
+export function attendanceExceptions(data, session, includeInjuries = false) {
   const students = sessionStudents(data, session);
   const namesFor = key => students.filter(student => session.attendance[student.id]?.[key]).map(studentName);
-  return { absent: namesFor('absent'), clothes: namesFor('clothes'), shoes: namesFor('shoes'), injured: namesFor('injured') };
+  const exceptions = { absent: namesFor('absent'), clothes: namesFor('clothes'), shoes: namesFor('shoes') };
+  if (includeInjuries) exceptions.injured = namesFor('injured');
+  return exceptions;
 }
 export function scheduleBreakForDate(data, date) {
   return (data.breaks || []).find(b => b.start <= date && date <= b.end) || null;
@@ -159,7 +161,7 @@ export function termPlanWeeks(data, yearGroup, termStart, count = 24) {
 }
 export function lessonsForDate(data, date) {
   const day = parseDate(date).getDay();
-  if (day === 0 || day === 6) return [];
+  if (day === 0 || day === 6) return data.sessions.filter(s => s.date === date && s.isMatch && !s.cancelledAt).sort((a, b) => a.start.localeCompare(b.start));
   // Only suppress unsaved recurring lessons; existing and one-off lessons remain available.
   const recurring = scheduleBreakForDate(data, date) ? [] : data.schedules.filter(s => s.day === day);
   const list = recurring.map(s => {
