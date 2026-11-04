@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
             }
         });
         webView.addJavascriptInterface(new LocalBridge(), "IdrottspulsNative");
-        String previewQuery = "preview".equals(BuildConfig.BUILD_TYPE) ? "?preview=1" : "";
+        String appQuery = "coach".equals(BuildConfig.BUILD_TYPE) ? "?coach=1" : "preview".equals(BuildConfig.BUILD_TYPE) ? "?preview=1" : "";
         webView.loadUrl(ORIGIN + "/assets/www/index.html" + previewQuery);
         if (Build.VERSION.SDK_INT >= 33) getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0, this::goBack);
     }
