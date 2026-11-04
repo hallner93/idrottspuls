@@ -388,10 +388,10 @@ export function upgradeWorkspace(envelope) {
   if (!isObj(envelope) || ![1, SCHEMA].includes(envelope.schemaVersion) || !['real','demo'].includes(envelope.active)) throw new Error('Dataversionen kan inte öppnas. Uppgifterna har inte skrivits över.');
   return { ...envelope, schemaVersion: SCHEMA, demo: upgradeData(envelope.demo), real: upgradeData(envelope.real) };
 }
-export function parseBackup(text) {
+export function parseBackup(text, expectedApp = 'Idrottspuls') {
   assert(typeof text === 'string' && text.length <= 20000000, 'filen är för stor.');
   const backup = JSON.parse(text);
-  assert(backup.app === 'Idrottspuls' && [1, SCHEMA].includes(backup.schemaVersion) && ['real', 'demo'].includes(backup.mode), 'fel app eller version.');
+  assert(backup.app === expectedApp && [1, SCHEMA].includes(backup.schemaVersion) && ['real', 'demo'].includes(backup.mode), 'fel app eller version.');
   return { ...backup, schemaVersion: SCHEMA, data: upgradeData(backup.data) };
 }
 export function demoData(today = dateKey()) {
