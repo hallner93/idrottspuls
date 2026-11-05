@@ -62,3 +62,5 @@ dialog{border:1px solid #e1e6dc;border-radius:20px;box-shadow:0 30px 100px #1b2d
 @media(max-width:590px){.status-legend{gap:7px 11px;padding:9px;font-size:9px}.legend-dot{width:8px;height:8px}.step-copy small{font-size:8px}.steps{gap:6px}.steps .step{gap:5px}}
 
 .followup-card .count-badge{background:#f0eaf6;color:#67507f}.followup-person .avatar{background:#f0eaf6;color:#67507f}.student-tile.flagged{border-color:#d9cce4}
+
+.archive-undo-note{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:10px 12px;background:#f0eaf6;border:1px solid #d9cce4;border-radius:9px;color:#67507f;font-size:11px}
