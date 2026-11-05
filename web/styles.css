@@ -47,3 +47,20 @@ dialog{border:1px solid #e1e6dc;border-radius:20px;box-shadow:0 30px 100px #1b2d
 
 .followup-card{max-height:min(72vh,620px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.tile-equipment{display:flex;gap:5px;flex-wrap:wrap}.tile-equipment:empty{display:none}
 @media(max-width:590px){.followup-card{max-height:56vh}}
+
+.badge.violet{background:#f0eaf6;color:#67507f}
+.status-legend{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;margin:12px 0 15px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fafbf8;color:#68756c;font-size:10px}
+.status-legend span{display:inline-flex;align-items:center;gap:6px}
+.legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#999}
+.legend-dot.absent{background:var(--red)}.legend-dot.clothes{background:var(--amber)}.legend-dot.shoes{background:var(--blue)}.legend-dot.followup{background:#67507f}
+.attendance-flag-cell{transition:background-color .15s ease}
+.attendance-flag-cell.absent.marked{background:#faece8}.attendance-flag-cell.clothes.marked{background:#fbf2df}.attendance-flag-cell.shoes.marked{background:#edf1f8}
+.attendance-flag-cell.absent.marked input{accent-color:var(--red)}.attendance-flag-cell.clothes.marked input{accent-color:var(--amber)}.attendance-flag-cell.shoes.marked input{accent-color:var(--blue)}
+.student-tile.absent{border-color:#e8c4bd;background:#fffaf8}
+.steps .step.done{color:var(--green)}.step-copy{display:grid;line-height:1.2}.step-copy small{margin-top:3px;font-size:9px;font-weight:400;color:var(--muted)}.step.active .step-copy small,.step.done .step-copy small{color:inherit}
+#toast{display:flex;align-items:center;gap:12px;justify-content:center}.toast-undo{border:0;border-radius:6px;background:#ffffff27;color:#fff;padding:6px 10px;font:inherit;font-weight:700;white-space:nowrap}.toast-undo:hover{background:#ffffff42}.toast-undo:disabled{opacity:.6}
+@media(max-width:590px){.status-legend{gap:7px 11px;padding:9px;font-size:9px}.legend-dot{width:8px;height:8px}.step-copy small{font-size:8px}.steps{gap:6px}.steps .step{gap:5px}}
+
+.followup-card .count-badge{background:#f0eaf6;color:#67507f}.followup-person .avatar{background:#f0eaf6;color:#67507f}.student-tile.flagged{border-color:#d9cce4}
+
+.archive-undo-note{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:10px 12px;background:#f0eaf6;border:1px solid #d9cce4;border-radius:9px;color:#67507f;font-size:11px}
