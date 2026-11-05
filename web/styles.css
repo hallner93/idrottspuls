@@ -60,3 +60,5 @@ dialog{border:1px solid #e1e6dc;border-radius:20px;box-shadow:0 30px 100px #1b2d
 .steps .step.done{color:var(--green)}.step-copy{display:grid;line-height:1.2}.step-copy small{margin-top:3px;font-size:9px;font-weight:400;color:var(--muted)}.step.active .step-copy small,.step.done .step-copy small{color:inherit}
 #toast{display:flex;align-items:center;gap:12px;justify-content:center}.toast-undo{border:0;border-radius:6px;background:#ffffff27;color:#fff;padding:6px 10px;font:inherit;font-weight:700;white-space:nowrap}.toast-undo:hover{background:#ffffff42}.toast-undo:disabled{opacity:.6}
 @media(max-width:590px){.status-legend{gap:7px 11px;padding:9px;font-size:9px}.legend-dot{width:8px;height:8px}.step-copy small{font-size:8px}.steps{gap:6px}.steps .step{gap:5px}}
+
+.followup-card .count-badge{background:#f0eaf6;color:#67507f}.followup-person .avatar{background:#f0eaf6;color:#67507f}.student-tile.flagged{border-color:#d9cce4}
