@@ -178,7 +178,7 @@ export function lessonsForDate(data, date) {
 export function materialize(data, lesson) {
   if (!lesson.planned) return lesson;
   const students = roster(data, lesson.classId);
-  const session = { id: uid(), classId: lesson.classId, className: data.classes.find(c => c.id === lesson.classId)?.name || '', scheduleId: lesson.scheduleId, date: lesson.date, start: lesson.start, end: lesson.end, location: lesson.location, topic: lesson.topic || '', focus: lesson.focus || '', studentIds: students.map(s => s.id), studentNames: Object.fromEntries(students.map(s => [s.id, { first: s.first, last: s.last }])), attendance: {}, attendanceDraft: null, attendanceSavedAt: null, observations: {}, runTiming: { startedAt: null, finishTimes: {} }, skipObservation: false, finalAssessment: false, complete: false, cancelledAt: null };
+  const session = { id: uid(), classId: lesson.classId, className: data.classes.find(c => c.id === lesson.classId)?.name || '', scheduleId: lesson.scheduleId, date: lesson.date, start: lesson.start, end: lesson.end, location: lesson.location, topic: lesson.topic || '', focus: lesson.focus || '', studentIds: students.map(s => s.id), studentNames: Object.fromEntries(students.map(s => [s.id, { first: s.first, last: s.last }])), attendance: {}, attendanceDraft: null, attendanceSavedAt: null, observations: {}, runTiming: { startedAt: null, stoppedAt: null, finishTimes: {} }, skipObservation: false, finalAssessment: false, complete: false, cancelledAt: null };
   data.sessions.push(session);
   return session;
 }
