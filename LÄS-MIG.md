@@ -4,12 +4,12 @@ En lokal lektionsbok för idrottslärare. Version 1.7.1.
 
 ## Nytt i version 1.7.1
 
-- Rättar ett fel som kunde hindra sammanställningen från att öppnas när det fanns slutbedömningar och förbättrar visningen av nästa steg på översikten.
+- Rättar ett fel som kunde hindra sammanställningen från att öppnas när det fanns slutbedömningar och visar nästa steg i en tydligt inramad ruta.
 - Sammanställningen samlar närvaro, utrustning, observationer och slutbedömningar i tydliga flikar. Frånvaro och utrustning visas med samma genomförda lektionsunderlag.
 - Slutbedömningar kan filtreras efter period och klass och visas sorterade efter klass, elev och område. Frånvarande elever är tydligt markerade.
 - Inställningar kan dölja de tre snabbstatistikkorten på översikten. Oavslutade lektioner visas som nästa steg.
 - Dagens lektioner har diskret färgkodade rutor. Surfplattans liggande läge använder en luftigare layout.
-- Videobiblioteket spelar in eller importerar klipp och kopplar dem till en lektion. Klippen sparas lokalt på enheten, kan exporteras separat och kan raderas ett och ett eller tillsammans. Videofiler ingår inte i JSON-säkerhetskopian.
+- Videobiblioteket spelar in eller importerar klipp och kopplar dem till en lektion. Vid inspelning kan du välja surfplattans fram- eller bakkamera. Klippen sparas lokalt på enheten, kan exporteras separat och kan raderas ett och ett eller tillsammans. Videofiler ingår inte i JSON-säkerhetskopian.
 
 ## Nytt i version 1.6.1
 
