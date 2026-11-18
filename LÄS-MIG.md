@@ -1,10 +1,15 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.7.2.
+En lokal lektionsbok för idrottslärare. Version 1.7.3.
+
+## Nytt i version 1.7.3
+
+- Den uppdaterade designen används nu i den vanliga appen.
+- Videoinspelning på Android öppnar surfplattans kameraapp och importerar sedan klippet till vald lektion. Beroende på kameran kan originalet också sparas i Galleri; borttagning i Idrottspuls tar bort appens egen kopia.
 
 ## Nytt i version 1.7.2
 
-- Gör rutan ”Nästa steg” tydlig på översikten och låter dig välja fram- eller bakkamera vid videoinspelning. Kamerakontroller för zoom, exponering, fokus och lampa visas när kameran stöder dem.
+- Aktiverar den nya, mörkgröna designen i själva appen, inte bara förhandsvisningen. Videoinspelning öppnar surfplattans vanliga kameraapp; det inspelade klippet importeras till vald lektion.
 
 ## Nytt i version 1.7.1
 

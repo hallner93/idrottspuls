@@ -7,13 +7,13 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.AtomicFile;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
-import android.webkit.PermissionRequest;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -34,14 +34,13 @@ import java.nio.charset.StandardCharsets;
 
 /** Local-only Android shell. All code/assets are bundled and all data stays in app-private files. */
 public class MainActivity extends Activity {
-    private static final int EXPORT_REQUEST = 701, IMPORT_REQUEST = 702, VIDEO_EXPORT_REQUEST = 703, CAMERA_PERMISSION_REQUEST = 704;
+    private static final int EXPORT_REQUEST = 701, IMPORT_REQUEST = 702, VIDEO_EXPORT_REQUEST = 703;
     private static final String ORIGIN = "https://appassets.androidplatform.net";
     private static final int MAX_BYTES = 20_000_000;
     private WebView webView;
     private ValueCallback<Uri[]> chooserCallback;
     private byte[] pendingExport;
     private AtomicFile stateFile;
-    private PermissionRequest cameraPermissionRequest;
     private OutputStream videoExportOutput;
 
     @Override public void onCreate(Bundle savedInstanceState) {
@@ -98,32 +97,29 @@ public class MainActivity extends Activity {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (chooserCallback != null) chooserCallback.onReceiveValue(null);
                 chooserCallback = callback;
-                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
                 String[] acceptTypes = params.getAcceptTypes();
                 String mimeType = acceptTypes != null && acceptTypes.length > 0 && acceptTypes[0] != null && !acceptTypes[0].isEmpty() ? acceptTypes[0] : "*/*";
-                intent.setType(mimeType);
-                try { startActivityForResult(intent, IMPORT_REQUEST); }
-                catch (Exception e) { chooserCallback.onReceiveValue(null); chooserCallback = null; }
+                boolean videoCapture = params.isCaptureEnabled() && acceptTypes != null && java.util.Arrays.stream(acceptTypes).anyMatch(type -> type != null && type.startsWith("video/"));
+                try {
+                    if (videoCapture) {
+                        Intent camera = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+                        camera.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1);
+                        try { startActivityForResult(camera, IMPORT_REQUEST); }
+                        catch (Exception noCameraApp) { launchOpenDocument(mimeType); }
+                    } else launchOpenDocument(mimeType);
+                } catch (Exception e) { chooserCallback.onReceiveValue(null); chooserCallback = null; }
                 return true;
-            }
-            @Override public void onPermissionRequest(PermissionRequest request) {
-                runOnUiThread(() -> {
-                    boolean videoOnly = request.getResources().length == 1 && PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(request.getResources()[0]);
-                    if (!videoOnly) { request.deny(); return; }
-                    if (Build.VERSION.SDK_INT < 23 || checkSelfPermission(android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                        request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
-                    } else if (cameraPermissionRequest == null) {
-                        cameraPermissionRequest = request;
-                        requestPermissions(new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST);
-                    } else request.deny();
-                });
             }
         });
         webView.addJavascriptInterface(new LocalBridge(), "IdrottspulsNative");
-        String previewQuery = "preview".equals(BuildConfig.BUILD_TYPE) ? "?preview=1" : "";
-        webView.loadUrl(ORIGIN + "/assets/www/index.html" + previewQuery);
+        webView.loadUrl(ORIGIN + "/assets/www/index.html");
         if (Build.VERSION.SDK_INT >= 33) getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0, this::goBack);
+    }
+    private void launchOpenDocument(String mimeType) throws Exception {
+        Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        picker.addCategory(Intent.CATEGORY_OPENABLE);
+        picker.setType(mimeType);
+        startActivityForResult(picker, IMPORT_REQUEST);
     }
     private boolean isLocal(Uri uri) {
         return "https".equals(uri.getScheme()) && "appassets.androidplatform.net".equals(uri.getHost()) && uri.getPort() == -1 && uri.getPath() != null && uri.getPath().startsWith("/assets/www/");
@@ -163,14 +159,6 @@ public class MainActivity extends Activity {
                 if (videoExportOutput == null) throw new Exception("Filen kunde inte öppnas.");
                 videoExportResult(true, "Redo att spara.");
             } catch (Exception e) { videoExportOutput = null; videoExportResult(false, "Filen kunde inte öppnas."); }
-        }
-    }
-    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == CAMERA_PERMISSION_REQUEST && cameraPermissionRequest != null) {
-            PermissionRequest request = cameraPermissionRequest; cameraPermissionRequest = null;
-            if (grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
-            else request.deny();
         }
     }
     private void videoExportResult(boolean ok, String message) {
@@ -250,7 +238,6 @@ public class MainActivity extends Activity {
     }
     @Override protected void onDestroy() {
         if (chooserCallback != null) chooserCallback.onReceiveValue(null);
-        if (cameraPermissionRequest != null) { cameraPermissionRequest.deny(); cameraPermissionRequest = null; }
         try { if (videoExportOutput != null) videoExportOutput.close(); } catch (Exception ignored) {}
         if (webView != null) { webView.removeJavascriptInterface("IdrottspulsNative"); webView.destroy(); webView = null; }
         super.onDestroy();
