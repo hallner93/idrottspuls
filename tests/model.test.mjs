@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, sortFinalAssessmentRows, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents, attendanceExceptions } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, dailyTeachingStats, studentStats, filteredSessions, studentFinalAssessments, sortFinalAssessmentRows, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents, attendanceExceptions } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -13,6 +13,14 @@ function lesson(data,date,observation={grade:'F',assessment:'below',note:''}) {
   const s=materialize(data,{planned:true,classId:'c1',scheduleId:null,date,start:'08:00',end:'09:00',topic:'Volleyboll',location:'Hallen'});
   s.attendance=Object.fromEntries(s.studentIds.map(id=>[id,blankAttendance()]));s.attendanceSavedAt=`${date}T10:00:00Z`;s.observations.s1=observation;return s;
 }
+test('Daily overview stats count lessons, saved observations and present pupils only on the selected day',()=>{
+  const d=fixture();
+  d.schedules=[{id:'mon',classId:'c1',day:1,start:'09:00',end:'10:00',topic:'Tennis',location:'Hallen'}];
+  const first=lesson(d,'2026-10-05');first.attendance.s2.absent=true;
+  const second=lesson(d,'2026-10-06');second.skipObservation=true;second.attendanceSavedAt=null;
+  assert.deepEqual(dailyTeachingStats(d,'2026-10-05'),{lessons:2,assessments:1,attendance:1});
+  assert.deepEqual(dailyTeachingStats(d,'2026-10-06'),{lessons:1,assessments:0,attendance:0});
+});
 test('Class search matches class and active student names case-insensitively',()=>{
   const classes=[{name:'7A',students:[{first:'Åsa',last:'Öberg',archived:false},{first:'Nils',last:'Test',archived:true}]},{name:'8B',students:[{first:'Amir',last:'Andersson',archived:false}]}];
   assert.deepEqual(searchClasses(classes,'7a'),[classes[0]]);
