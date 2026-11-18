@@ -276,6 +276,14 @@ test('Older classes gain an unassigned year group and an empty planning calendar
   upgraded.classes[0].yearGroup=10;assert.throws(()=>validateData(upgraded),/årskurs/);
   upgraded.classes[0].yearGroup=7;upgraded.lessonPlans=[{yearGroup:7,weekStart:'2026-10-27',slot:1,topic:'Fel veckodag'}];assert.throws(()=>validateData(upgraded),/planering/);
 });
+test('Homepage statistic visibility migrates with all cards enabled and preserves saved choices',()=>{
+  const d=fixture();delete d.settings.homeStats;
+  const migrated=upgradeData(d);
+  assert.deepEqual(migrated.settings.homeStats,{lessons:true,assessments:true,attendance:true});
+  assert.equal(d.settings.homeStats,undefined,'migration does not mutate existing local data');
+  migrated.settings.homeStats={lessons:false,assessments:true,attendance:false};
+  assert.deepEqual(upgradeData(migrated).settings.homeStats,{lessons:false,assessments:true,attendance:false});
+});
 
 test('New backup round trips keep all selections, and invalid arrays are rejected',()=>{
   const d=fixture();d.classes[0].yearGroup=7;const s=lesson(d,'2026-10-01',{assessments:['followup','good','okay'],grades:['E','C'],note:'Alla val'});
