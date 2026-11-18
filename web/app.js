@@ -223,7 +223,7 @@ function renderSettingsBase() {
   const s=data().settings,term=termInfo(s.termStart),archives=data().termArchives||[];
   const termSection=`<section class="card settings-section term-break-section"><h2>Terminsbyte</h2><p class="helper">Aktiv termin: <strong>${esc(term.label)}</strong> · start ${esc(formatDate(s.termStart))}.</p><p>Vid terminsbyte arkiveras hela terminen i appen. Klasser och elever behålls; närvaro, utrustningsmarkeringar, observationer, lov och terminsplanering börjar om.</p>${btn(`${icon('calendar',15)} Terminsbryt`,'term-break','primary')}</section>`;
   const archiveSection=`<section class="card settings-section term-archive-section"><h2>Terminsarkiv</h2>${archives.length?`<div class="field archive-search"><label for="archive-search">Sök i arkivet</label><input id="archive-search" class="search" value="${esc(ui.archiveQuery)}" placeholder="Sök termin, klass, elev eller område…"><small class="helper" id="archive-search-count">Visar ${archives.length} av ${archives.length} terminer</small></div><div class="term-archive-list">${[...archives].reverse().map(a=>`<div class="settings-row archive-row" data-archive-search="${esc(`${a.label} ${a.data.classes.map(c=>`${c.name} ${c.students.map(studentName).join(' ')}`).join(' ')} ${a.data.sessions.map(s=>s.topic||'').join(' ')}`.toLocaleLowerCase('sv'))}"><div><strong>${esc(a.label)}</strong><small>${a.data.classes.length} klasser · ${a.data.classes.reduce((n,c)=>n+c.students.length,0)} elever · ${a.data.sessions.length} lektioner · arkiverad ${esc(formatDate(a.archivedAt.slice(0,10)))}</small></div><div class="term-archive-actions">${btn('Visa arkiv','view-term-archive','small',`data-id="${esc(a.id)}"`)}${btn('Ladda ner arkiv','download-term-archive','small ghost',`data-id="${esc(a.id)}"`)}</div></div>`).join('')}</div>`:`<p class="inline-note">Ännu ingen termin arkiverad. Ett terminsbyte sparar hela terminen här.</p>`}</section>`;
-  return `${heading('Inställningar','Gör Idrottspuls till din egen lektionsbok.')}<section class="card settings-section theme-settings"><h2>Färgtema</h2><p class="helper theme-help">Välj en färg för appens knappar och markeringar. Valet sparas på enheten.</p><div class="theme-options" role="group" aria-label="Välj färgtema">${THEMES.map(theme=>`<button type="button" class="theme-option ${normalizeTheme(s.theme)===theme.id?'selected':''}" data-action="theme-select" data-theme="${theme.id}" aria-pressed="${normalizeTheme(s.theme)===theme.id}" aria-label="${theme.name}" title="${theme.name}"><span class="theme-swatch" style="--theme-swatch:${theme.color}"></span><span>${theme.name}</span></button>`).join('')}</div></section><form id="settings-form" class="card settings-section"><h2>Din undervisning</h2><div class="form-grid"><div class="field"><label for="teacher">Ditt namn</label><input id="teacher" name="teacher" maxlength="100" value="${esc(s.teacher)}" placeholder="Idrottslärare"></div><div class="field"><label for="school">Skola</label><input id="school" name="school" maxlength="120" value="${esc(s.school)}" placeholder="Din skola"></div><div class="field"><label for="term-start">Terminens första datum</label><input id="term-start" name="termStart" type="date" required value="${esc(s.termStart)}"></div><div class="field"><label for="threshold">Tillfällen före automatisk uppföljning</label><input id="threshold" name="threshold" type="number" required min="1" max="10" step="1" value="${s.threshold}"><small class="helper">Din önskade standard: 3 olika lektioner.</small></div></div><div class="right section-space"><button class="btn primary" type="submit">${icon('check',15)} Spara inställningar</button></div></form>${termSection}<section class="card settings-section"><h2>Så räknas uppföljning</h2><ul class="rule-list"><li>F, sämre än förväntat, ej godkänt genomförande och ej deltagande räknas som ett negativt tillfälle.</li><li>En elev kan få högst ett negativt tillfälle per lektion, även om både F och ett knappval är markerade.</li><li>Tillfällena behöver inte vara i följd. Endast sparade observationer från terminens start räknas.</li><li>Frånvaro, ej observerade elever och lektioner med avstådd observation räknas inte.</li><li>Knappen Behov av uppföljning ger en direkt, manuell markering.</li><li>När du markerar uppföljningen som genomförd räknas endast lektioner efter det datumet. Historiken finns kvar.</li></ul></section><section class="card settings-section"><h2>Lagring & app</h2><div class="settings-row"><div><strong>${storageType}</strong><small>Inga elevuppgifter skickas till någon server.</small></div>${btn('Kontrollera lagring','persist-storage','small')}</div><div class="settings-row"><div><strong>${workspace.active==='demo'?'Du använder demodata':'Du använder din egen lektionsbok'}</strong><small>Demo och din egen data lagras separat.</small></div>${btn(workspace.active==='demo'?'Använd egen data':'Visa demodata','switch-mode','small')}</div><div class="settings-row"><div><strong>Idrottspuls 1.7.1</strong><small>${window.IdrottspulsNative?'Androidapp med intern fillagring.':'Webbversion. Installera från en HTTPS-adress för att använda den som webbapp på Android.'}</small></div></div><div class="settings-row"><div><strong>Utvecklare: Patrik Hallner</strong><small>Idrottspuls</small></div></div></section>${archiveSection}`;
+  return `${heading('Inställningar','Gör Idrottspuls till din egen lektionsbok.')}<section class="card settings-section theme-settings"><h2>Färgtema</h2><p class="helper theme-help">Välj en färg för appens knappar och markeringar. Valet sparas på enheten.</p><div class="theme-options" role="group" aria-label="Välj färgtema">${THEMES.map(theme=>`<button type="button" class="theme-option ${normalizeTheme(s.theme)===theme.id?'selected':''}" data-action="theme-select" data-theme="${theme.id}" aria-pressed="${normalizeTheme(s.theme)===theme.id}" aria-label="${theme.name}" title="${theme.name}"><span class="theme-swatch" style="--theme-swatch:${theme.color}"></span><span>${theme.name}</span></button>`).join('')}</div></section><form id="settings-form" class="card settings-section"><h2>Din undervisning</h2><div class="form-grid"><div class="field"><label for="teacher">Ditt namn</label><input id="teacher" name="teacher" maxlength="100" value="${esc(s.teacher)}" placeholder="Idrottslärare"></div><div class="field"><label for="school">Skola</label><input id="school" name="school" maxlength="120" value="${esc(s.school)}" placeholder="Din skola"></div><div class="field"><label for="term-start">Terminens första datum</label><input id="term-start" name="termStart" type="date" required value="${esc(s.termStart)}"></div><div class="field"><label for="threshold">Tillfällen före automatisk uppföljning</label><input id="threshold" name="threshold" type="number" required min="1" max="10" step="1" value="${s.threshold}"><small class="helper">Din önskade standard: 3 olika lektioner.</small></div></div><div class="right section-space"><button class="btn primary" type="submit">${icon('check',15)} Spara inställningar</button></div></form>${termSection}<section class="card settings-section"><h2>Så räknas uppföljning</h2><ul class="rule-list"><li>F, sämre än förväntat, ej godkänt genomförande och ej deltagande räknas som ett negativt tillfälle.</li><li>En elev kan få högst ett negativt tillfälle per lektion, även om både F och ett knappval är markerade.</li><li>Tillfällena behöver inte vara i följd. Endast sparade observationer från terminens start räknas.</li><li>Frånvaro, ej observerade elever och lektioner med avstådd observation räknas inte.</li><li>Knappen Behov av uppföljning ger en direkt, manuell markering.</li><li>När du markerar uppföljningen som genomförd räknas endast lektioner efter det datumet. Historiken finns kvar.</li></ul></section><section class="card settings-section"><h2>Lagring & app</h2><div class="settings-row"><div><strong>${storageType}</strong><small>Inga elevuppgifter skickas till någon server.</small></div>${btn('Kontrollera lagring','persist-storage','small')}</div><div class="settings-row"><div><strong>${workspace.active==='demo'?'Du använder demodata':'Du använder din egen lektionsbok'}</strong><small>Demo och din egen data lagras separat.</small></div>${btn(workspace.active==='demo'?'Använd egen data':'Visa demodata','switch-mode','small')}</div><div class="settings-row"><div><strong>Idrottspuls 1.7.2</strong><small>${window.IdrottspulsNative?'Androidapp med intern fillagring.':'Webbversion. Installera från en HTTPS-adress för att använda den som webbapp på Android.'}</small></div></div><div class="settings-row"><div><strong>Utvecklare: Patrik Hallner</strong><small>Idrottspuls</small></div></div></section>${archiveSection}`;
 }
 function renderSettings() {
   const settings=data().settings.homeStats||{lessons:true,assessments:true,attendance:true};
@@ -248,20 +248,78 @@ async function storeVideoBlob(blob, session, name) {
   videoItems=await listVideos();
   return item;
 }
+function makeVideoRecorder(capture) {
+  const types=['video/mp4','video/webm;codecs=vp8','video/webm'].filter(type=>MediaRecorder.isTypeSupported?.(type));
+  try {
+    const recorder=new MediaRecorder(capture.stream,types.length?{mimeType:types[0]}:{});
+    recorder.addEventListener('dataavailable',event=>{if(event.data?.size)capture.parts.push(event.data);});
+    return recorder;
+  } catch { capture.stream.getTracks().forEach(track=>track.stop()); throw new Error('Enhetens videoinspelning stöds inte av appen. Välj ett befintligt videoklipp i stället.'); }
+}
+function cameraControlsHtml(capture) {
+  const track=capture.stream.getVideoTracks()[0];let capabilities={},settings={};
+  try { capabilities=track.getCapabilities?.()||{};settings=track.getSettings?.()||{}; } catch {}
+  capture.cameraCapabilities=capabilities;capture.torchOn=!!settings.torch;
+  const controls=[];
+  const rangeControl=(key,label,range,value,format)=>{
+    if(!range||!Number.isFinite(range.min)||!Number.isFinite(range.max)||range.max<=range.min)return;
+    const step=Number.isFinite(range.step)&&range.step>0?range.step:(range.max-range.min)/100;
+    const initial=Number.isFinite(value)?Math.min(range.max,Math.max(range.min,value)):range.min;
+    controls.push(`<div class="camera-control"><label for="video-${key}">${label}<output id="video-${key}-value">${format(initial)}</output></label><input id="video-${key}" type="range" min="${range.min}" max="${range.max}" step="${step}" value="${initial}" aria-label="${label}"></div>`);
+  };
+  rangeControl('zoom','Zoom',capabilities.zoom,settings.zoom,value=>`${value.toFixed(1)}×`);
+  rangeControl('exposureCompensation','Exponering',capabilities.exposureCompensation,settings.exposureCompensation,value=>`${value.toFixed(1)} EV`);
+  if(Array.isArray(capabilities.focusMode)&&capabilities.focusMode.length>1){
+    const names={continuous:'Autofokus','single-shot':'Fokusera en gång',manual:'Manuell fokus',none:'Ingen fokus'};
+    controls.push(`<div class="field camera-control"><label for="video-focus-mode">Fokus</label><select id="video-focus-mode">${capabilities.focusMode.map(mode=>`<option value="${esc(mode)}" ${settings.focusMode===mode?'selected':''}>${esc(names[mode]||mode)}</option>`).join('')}</select></div>`);
+  }
+  const torchValues=Array.isArray(capabilities.torch)?capabilities.torch:[];
+  if(torchValues.includes(true)&&torchValues.includes(false))controls.push(`<button type="button" id="video-torch-toggle" class="btn small ghost camera-torch" data-action="toggle-video-torch" aria-pressed="${capture.torchOn}">${capture.torchOn?'Lampa på':'Lampa av'}</button>`);
+  return `<section class="camera-controls" id="camera-controls"><h3>Kamerakontroller</h3>${controls.length?`<div class="camera-controls-grid">${controls.join('')}</div>`:'<p class="helper">Kameran visar inga extra reglage på den här enheten.</p>'}</section>`;
+}
+async function applyCameraSetting(key,value) {
+  const track=activeVideoCapture?.stream.getVideoTracks()[0];
+  if(!track?.applyConstraints)throw new Error('Kameran kan inte ändras medan förhandsvisningen är öppen.');
+  try { await track.applyConstraints({advanced:[{[key]:value}]}); }
+  catch { throw new Error('Den här kameran kunde inte använda reglaget.'); }
+}
+async function openVideoStream(deviceId='') {
+  return navigator.mediaDevices.getUserMedia({video:deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'}},audio:false});
+}
+async function switchVideoCamera(deviceId) {
+  const capture=activeVideoCapture;
+  if(!capture||capture.recorder.state!=='inactive')return;
+  const previousId=capture.stream.getVideoTracks()[0]?.getSettings?.().deviceId||'';
+  capture.stream.getTracks().forEach(track=>track.stop());
+  try { capture.stream=await openVideoStream(deviceId); }
+  catch(error) {
+    try { capture.stream=await openVideoStream(previousId); }
+    catch { capture.stream=await openVideoStream(); }
+    capture.recorder=makeVideoRecorder(capture);
+    const preview=modal.querySelector('#video-live-preview');if(preview){preview.srcObject=capture.stream;await preview.play().catch(()=>{});}
+    throw new Error('Kameran kunde inte bytas. Välj en annan kamera eller försök igen.');
+  }
+  capture.parts=[];capture.recorder=makeVideoRecorder(capture);
+  const preview=modal.querySelector('#video-live-preview');if(preview){preview.srcObject=capture.stream;await preview.play().catch(()=>{});}
+  const controls=modal.querySelector('#camera-controls');if(controls)controls.outerHTML=cameraControlsHtml(capture);
+}
 async function showVideoCapture(session) {
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error('Videoinspelning stöds inte här. Använd Välj video för att hämta ett klipp från enheten.');
   let stream;
-  try { stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false}); }
+  try { stream=await openVideoStream(); }
   catch(error) { if(error.name==='NotAllowedError'||error.name==='PermissionDeniedError') throw new Error('Kameran är inte tillåten. Ge Idrottspuls åtkomst till kameran i enhetens inställningar.'); throw new Error('Kameran kunde inte öppnas. Kontrollera att den inte används av en annan app.'); }
-  const types=['video/mp4','video/webm;codecs=vp8','video/webm'].filter(type=>MediaRecorder.isTypeSupported?.(type));
-  let recorder;
-  try { recorder=new MediaRecorder(stream,types.length?{mimeType:types[0]}:{}); }
-  catch { stream.getTracks().forEach(track=>track.stop()); throw new Error('Enhetens videoinspelning stöds inte av appen. Välj ett befintligt videoklipp i stället.'); }
-  activeVideoCapture={stream,recorder,parts:[],session,saving:false};
-  recorder.addEventListener('dataavailable',event=>{if(event.data?.size)activeVideoCapture?.parts.push(event.data);});
-  showDialog('Videounderlag',videoSessionTitle(session),`<video id="video-live-preview" class="video-live-preview" autoplay muted playsinline></video><p class="helper video-record-status" role="status">Kameran är redo. Inspelningen sparas bara när du väljer Spara klipp.</p>`,`${btn('Stäng','close-modal')}${btn('Starta inspelning','start-video-recording','primary')}`);
+  let cameras=[];
+  try { cameras=(await navigator.mediaDevices.enumerateDevices()).filter(device=>device.kind==='videoinput'); } catch {}
+  const currentId=stream.getVideoTracks()[0]?.getSettings?.().deviceId||'';
+  const rearCamera=cameras.find(device=>/back|rear|environment|world|facing\s*back|camera\s*0/iu.test(device.label));
+  if(rearCamera?.deviceId&&rearCamera.deviceId!==currentId){stream.getTracks().forEach(track=>track.stop());try{stream=await openVideoStream(rearCamera.deviceId);}catch{stream=await openVideoStream();}}
+  activeVideoCapture={stream,recorder:null,parts:[],session,saving:false,cameras};
+  activeVideoCapture.recorder=makeVideoRecorder(activeVideoCapture);
+  const selectedId=stream.getVideoTracks()[0]?.getSettings?.().deviceId||'';
+  const cameraControl=cameras.length>1?`<div class="field video-camera-picker"><label for="video-camera-select">Kamera</label><select id="video-camera-select" aria-label="Välj kamera">${cameras.map((camera,index)=>`<option value="${esc(camera.deviceId)}" ${camera.deviceId===selectedId?'selected':''}>${esc(camera.label||`Kamera ${index+1}`)}</option>`).join('')}</select></div>`:'';
+  showDialog('Videounderlag',videoSessionTitle(session),`${cameraControl}${cameraControlsHtml(activeVideoCapture)}<video id="video-live-preview" class="video-live-preview" autoplay muted playsinline></video><p class="helper video-record-status" role="status">${cameras.length>1?'Välj bakre kamera i listan om den främre är vald. ':''}Kameran är redo. Inspelningen sparas bara när du väljer Spara klipp.</p>`,`${btn('Stäng','close-modal')}${btn('Starta inspelning','start-video-recording','primary')}`);
   const preview=modal.querySelector('#video-live-preview');
-  if(preview){preview.srcObject=stream;await preview.play().catch(()=>{});}
+  if(preview){preview.srcObject=activeVideoCapture.stream;await preview.play().catch(()=>{});}
 }
 async function saveVideoRecording() {
   const capture=activeVideoCapture;
@@ -528,7 +586,8 @@ async function performAction(action,el) {
     case 'lesson-videos':ui.videoSessionId=id;await navigate('videos');break;
     case 'import-video': {const session=videoSession(ui.videoSessionId);if(!session)throw new Error('Välj först vilken lektion klippet hör till.');document.querySelector('#video-file')?.click();break;}
     case 'record-video': {const session=videoSession(id||ui.videoSessionId);if(!session)throw new Error('Välj först vilken lektion klippet hör till.');await showVideoCapture(session);break;}
-    case 'start-video-recording': {const capture=activeVideoCapture;if(!capture)throw new Error('Kameran är inte öppen.');capture.recorder.start(1000);const button=modal.querySelector('[data-action="start-video-recording"]'),status=modal.querySelector('.video-record-status');if(button){button.dataset.action='save-video-recording';button.textContent='Stoppa och spara';}if(status)status.textContent='Inspelning pågår. Tryck på Stoppa och spara när klippet är klart.';break;}
+    case 'start-video-recording': {const capture=activeVideoCapture;if(!capture)throw new Error('Kameran är inte öppen.');capture.recorder.start(1000);const button=modal.querySelector('[data-action="start-video-recording"]'),status=modal.querySelector('.video-record-status'),picker=modal.querySelector('#video-camera-select');if(picker)picker.disabled=true;if(button){button.dataset.action='save-video-recording';button.textContent='Stoppa och spara';}if(status)status.textContent='Inspelning pågår. Tryck på Stoppa och spara när klippet är klart.';break;}
+    case 'toggle-video-torch': {const capture=activeVideoCapture;if(!capture)throw new Error('Kameran är inte öppen.');capture.torchOn=!capture.torchOn;await applyCameraSetting('torch',capture.torchOn);el.setAttribute('aria-pressed',String(capture.torchOn));el.textContent=capture.torchOn?'Lampa på':'Lampa av';break;}
     case 'save-video-recording':await saveVideoRecording();break;
     case 'play-video':await playVideo(id);break;
     case 'delete-video': {const video=videoItems.find(item=>item.id===id);if(!video)throw new Error('Videon hittades inte.');confirmDialog('Ta bort videoklippet?',`<strong>${esc(video.name)}</strong> tas bort från surfplattans appminne. Det går inte att ångra.`,'Ta bort video',async()=>{await deleteVideo(id);videoItems=await listVideos();modal.close();render();toast('Videoklippet är borttaget.');});break;}
@@ -570,6 +629,9 @@ document.addEventListener('change',async event=>{
   const el=event.target;
   try {
     if(el.id==='video-session-select'){ui.videoSessionId=el.value;render();}
+    if(el.id==='video-camera-select'){await switchVideoCamera(el.value);}
+    if(el.id==='video-zoom'||el.id==='video-exposureCompensation'){const key=el.id==='video-zoom'?'zoom':'exposureCompensation',output=modal.querySelector(`#${el.id}-value`),value=Number(el.value);if(output)output.textContent=key==='zoom'?`${value.toFixed(1)}×`:`${value.toFixed(1)} EV`;await applyCameraSetting(key,value);}
+    if(el.id==='video-focus-mode'){await applyCameraSetting('focusMode',el.value);}
     if(el.id==='video-file'&&el.files?.[0]){const file=el.files[0],session=videoSession(ui.videoSessionId);el.value='';if(!session)throw new Error('Välj först vilken lektion klippet hör till.');if(!file.type.startsWith('video/'))throw new Error('Välj en videofil.');await storeVideoBlob(file,session,file.name.replace(/\.[^.]+$/u,'')||'Videoklipp');render();toast('Videon har sparats under lektionen.');}
     if(el.id==='plan-year-group'){ui.planYearGroup=Number(el.value);render();}
     if(el.id==='schedule-template'){const template=LESSON_TEMPLATES.find(t=>t.id===el.value);if(template){const topic=modal.querySelector('#schedule-topic'),focus=modal.querySelector('#schedule-focus');if(topic)topic.value=template.topic;if(focus)focus.value=template.focus;}}
