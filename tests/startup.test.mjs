@@ -84,6 +84,8 @@ test('Summary navigation combines absence, observations, and final assessments',
   assert.match(source, /\['videos','video','Videobibliotek'\]/);
   assert.match(source, /function renderUnifiedSummary\(\)/);
   assert.match(source, /\['finals','Slutbedömningar'\]/);
+  assert.match(source, /data-summary-sort/);
+  assert.match(source, /sortFinalAssessmentRows\(/);
   assert.match(source, /data-home-stat=/);
   assert.match(source, /data-home-stat-card/);
   assert.match(source, /student:\{\.\.\.student,className:session\.className\|\|d\.classes\.find\(c=>c\.id===session\.classId\)\?\.name/);

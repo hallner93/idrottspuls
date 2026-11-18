@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents, attendanceExceptions } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, studentStats, filteredSessions, studentFinalAssessments, sortFinalAssessmentRows, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents, attendanceExceptions } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -162,6 +162,15 @@ test('Final assessment is stored per lesson, appears in both Excel layouts and e
   assert.deepEqual(exportRowsByStudent(d,{},['first','date','finalAssessment']).find(row=>row[0]==='Åsa'),['Åsa','2026-10-01\n2026-10-08','Nej\nJa']);
   assert.deepEqual(exportRows(d,{},['first','finalArea']).filter(row=>row[0]==='Åsa'),[['Åsa',''],['Åsa','Volleyboll']]);
   assert.deepEqual(exportRowsByStudent(d,{},['first','finalArea']).find(row=>row[0]==='Åsa'),['Åsa','–\nVolleyboll']);
+});
+test('Final assessments sort by class and student, or globally by student name',()=>{
+  const rows=[
+    {student:{first:'Zoey',last:'Zebra',className:'7A'},session:{date:'2026-10-08',start:'10:00'}},
+    {student:{first:'Bo',last:'Andersson',className:'7B'},session:{date:'2026-10-08',start:'10:00'}},
+    {student:{first:'Anna',last:'Andersson',className:'7A'},session:{date:'2026-10-01',start:'09:00'}},
+  ];
+  assert.deepEqual(sortFinalAssessmentRows(rows,'class').map(row=>`${row.student.className} ${row.student.first}`),['7A Anna','7A Zoey','7B Bo']);
+  assert.deepEqual(sortFinalAssessmentRows(rows,'student').map(row=>`${row.student.last} ${row.student.first}`),['Andersson Anna','Andersson Bo','Zebra Zoey']);
 });
 test('Absent pupils stay out of observation unless final assessment is enabled, then are clearly identified and their final observations export',()=>{
   const d=fixture(),s=lesson(d,'2026-10-01');s.attendance.s2.absent=true;s.observations.s2={assessments:['good'],grades:['B'],note:'Slutlig teknikbedömning'};
