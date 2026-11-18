@@ -154,12 +154,14 @@ test('Student overview export includes each pupil once and keeps lesson values a
   assert.equal(exportRows(d,{},['first']).length,5,'lesson detail export remains available');
 });
 test('Final assessment is stored per lesson, appears in both Excel layouts and each participating pupil summary',()=>{
-  const d=fixture(),first=lesson(d,'2026-10-01'),second=lesson(d,'2026-10-08');second.finalAssessment=true;
+  const d=fixture(),first=lesson(d,'2026-10-01'),second=lesson(d,'2026-10-08');second.topic='Volleyboll';second.finalAssessment=true;
   assert.equal(first.finalAssessment,false);
   assert.deepEqual(studentFinalAssessments(d,'s1'),[second]);
   assert.deepEqual(studentFinalAssessments(d,'s2'),[second]);
   assert.deepEqual(exportRows(d,{},['first','date','finalAssessment']).filter(row=>row[0]==='Åsa'),[['Åsa','2026-10-01','Nej'],['Åsa','2026-10-08','Ja']]);
   assert.deepEqual(exportRowsByStudent(d,{},['first','date','finalAssessment']).find(row=>row[0]==='Åsa'),['Åsa','2026-10-01\n2026-10-08','Nej\nJa']);
+  assert.deepEqual(exportRows(d,{},['first','finalArea']).filter(row=>row[0]==='Åsa'),[['Åsa',''],['Åsa','Volleyboll']]);
+  assert.deepEqual(exportRowsByStudent(d,{},['first','finalArea']).find(row=>row[0]==='Åsa'),['Åsa','–\nVolleyboll']);
 });
 test('Absent pupils stay out of observation unless final assessment is enabled, then are clearly identified and their final observations export',()=>{
   const d=fixture(),s=lesson(d,'2026-10-01');s.attendance.s2.absent=true;s.observations.s2={assessments:['good'],grades:['B'],note:'Slutlig teknikbedömning'};
