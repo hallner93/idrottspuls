@@ -1,6 +1,11 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.7.3.
+En lokal lektionsbok för idrottslärare. Version 1.7.4.
+
+## Nytt i version 1.7.4
+
+- Förbättrar sidomenyn i liggande läge och gör så att färgteman även styr menyn, primärknappar och vald dag.
+- Förtydligar att området för slutbedömning hämtas från fältet ”Vad arbetar ni med?” och blir områdesrubrik i Excel.
 
 ## Nytt i version 1.7.3
 
