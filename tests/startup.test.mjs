@@ -54,7 +54,7 @@ test('Video library is local, session-linked, deletable and exported separately'
   assert.match(activity, /RESOURCE_VIDEO_CAPTURE/);
   assert.match(activity, /writeVideoChunk/);
   assert.match(css, /\.video-library-controls/);
-  assert.match(cache, /idrottspuls-v1\.7\.0/);
+  assert.match(cache, /idrottspuls-v1\.7\.1/);
   assert.doesNotMatch(manifest, /android\.permission\.INTERNET|WRITE_EXTERNAL_STORAGE/);
 });
 
@@ -65,4 +65,5 @@ test('Summary navigation combines absence, observations, and final assessments',
   assert.match(source, /\['finals','Slutbedömningar'\]/);
   assert.match(source, /data-home-stat=/);
   assert.match(source, /data-home-stat-card/);
+  assert.match(source, /student:\{\.\.\.student,className:session\.className\|\|d\.classes\.find\(c=>c\.id===session\.classId\)\?\.name/);
 });

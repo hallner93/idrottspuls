@@ -1,9 +1,10 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.7.0.
+En lokal lektionsbok för idrottslärare. Version 1.7.1.
 
-## Nytt i version 1.7.0
+## Nytt i version 1.7.1
 
+- Rättar ett fel som kunde hindra sammanställningen från att öppnas när det fanns slutbedömningar och förbättrar visningen av nästa steg på översikten.
 - Sammanställningen samlar närvaro, utrustning, observationer och slutbedömningar i tydliga flikar. Frånvaro och utrustning visas med samma genomförda lektionsunderlag.
 - Slutbedömningar kan filtreras efter period och klass och visas sorterade efter klass, elev och område. Frånvarande elever är tydligt markerade.
 - Inställningar kan dölja de tre snabbstatistikkorten på översikten. Oavslutade lektioner visas som nästa steg.
