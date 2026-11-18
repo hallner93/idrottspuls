@@ -47,6 +47,9 @@ test('Video library is local, session-linked, deletable and exported separately'
   assert.match(app, /function renderVideoLibrary\(\)/);
   assert.match(app, /function switchVideoCamera\(deviceId\)/);
   assert.match(app, /id="video-camera-select"/);
+  assert.match(app, /rangeControl\('zoom'/);
+  assert.match(app, /data-action="toggle-video-torch"/);
+  assert.match(app, /video-exposureCompensation/);
   assert.match(app, /lesson-videos/);
   assert.match(app, /delete-all-videos/);
   assert.match(storage, /createObjectStore\('videos'/);

@@ -4,7 +4,7 @@ En lokal lektionsbok för idrottslärare. Version 1.7.2.
 
 ## Nytt i version 1.7.2
 
-- Gör rutan ”Nästa steg” tydlig på översikten och låter dig välja fram- eller bakkamera vid videoinspelning.
+- Gör rutan ”Nästa steg” tydlig på översikten och låter dig välja fram- eller bakkamera vid videoinspelning. Kamerakontroller för zoom, exponering, fokus och lampa visas när kameran stöder dem.
 
 ## Nytt i version 1.7.1
 

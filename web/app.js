@@ -256,6 +256,33 @@ function makeVideoRecorder(capture) {
     return recorder;
   } catch { capture.stream.getTracks().forEach(track=>track.stop()); throw new Error('Enhetens videoinspelning stöds inte av appen. Välj ett befintligt videoklipp i stället.'); }
 }
+function cameraControlsHtml(capture) {
+  const track=capture.stream.getVideoTracks()[0];let capabilities={},settings={};
+  try { capabilities=track.getCapabilities?.()||{};settings=track.getSettings?.()||{}; } catch {}
+  capture.cameraCapabilities=capabilities;capture.torchOn=!!settings.torch;
+  const controls=[];
+  const rangeControl=(key,label,range,value,format)=>{
+    if(!range||!Number.isFinite(range.min)||!Number.isFinite(range.max)||range.max<=range.min)return;
+    const step=Number.isFinite(range.step)&&range.step>0?range.step:(range.max-range.min)/100;
+    const initial=Number.isFinite(value)?Math.min(range.max,Math.max(range.min,value)):range.min;
+    controls.push(`<div class="camera-control"><label for="video-${key}">${label}<output id="video-${key}-value">${format(initial)}</output></label><input id="video-${key}" type="range" min="${range.min}" max="${range.max}" step="${step}" value="${initial}" aria-label="${label}"></div>`);
+  };
+  rangeControl('zoom','Zoom',capabilities.zoom,settings.zoom,value=>`${value.toFixed(1)}×`);
+  rangeControl('exposureCompensation','Exponering',capabilities.exposureCompensation,settings.exposureCompensation,value=>`${value.toFixed(1)} EV`);
+  if(Array.isArray(capabilities.focusMode)&&capabilities.focusMode.length>1){
+    const names={continuous:'Autofokus','single-shot':'Fokusera en gång',manual:'Manuell fokus',none:'Ingen fokus'};
+    controls.push(`<div class="field camera-control"><label for="video-focus-mode">Fokus</label><select id="video-focus-mode">${capabilities.focusMode.map(mode=>`<option value="${esc(mode)}" ${settings.focusMode===mode?'selected':''}>${esc(names[mode]||mode)}</option>`).join('')}</select></div>`);
+  }
+  const torchValues=Array.isArray(capabilities.torch)?capabilities.torch:[];
+  if(torchValues.includes(true)&&torchValues.includes(false))controls.push(`<button type="button" id="video-torch-toggle" class="btn small ghost camera-torch" data-action="toggle-video-torch" aria-pressed="${capture.torchOn}">${capture.torchOn?'Lampa på':'Lampa av'}</button>`);
+  return `<section class="camera-controls" id="camera-controls"><h3>Kamerakontroller</h3>${controls.length?`<div class="camera-controls-grid">${controls.join('')}</div>`:'<p class="helper">Kameran visar inga extra reglage på den här enheten.</p>'}</section>`;
+}
+async function applyCameraSetting(key,value) {
+  const track=activeVideoCapture?.stream.getVideoTracks()[0];
+  if(!track?.applyConstraints)throw new Error('Kameran kan inte ändras medan förhandsvisningen är öppen.');
+  try { await track.applyConstraints({advanced:[{[key]:value}]}); }
+  catch { throw new Error('Den här kameran kunde inte använda reglaget.'); }
+}
 async function openVideoStream(deviceId='') {
   return navigator.mediaDevices.getUserMedia({video:deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'}},audio:false});
 }
@@ -274,6 +301,7 @@ async function switchVideoCamera(deviceId) {
   }
   capture.parts=[];capture.recorder=makeVideoRecorder(capture);
   const preview=modal.querySelector('#video-live-preview');if(preview){preview.srcObject=capture.stream;await preview.play().catch(()=>{});}
+  const controls=modal.querySelector('#camera-controls');if(controls)controls.outerHTML=cameraControlsHtml(capture);
 }
 async function showVideoCapture(session) {
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error('Videoinspelning stöds inte här. Använd Välj video för att hämta ett klipp från enheten.');
@@ -289,7 +317,7 @@ async function showVideoCapture(session) {
   activeVideoCapture.recorder=makeVideoRecorder(activeVideoCapture);
   const selectedId=stream.getVideoTracks()[0]?.getSettings?.().deviceId||'';
   const cameraControl=cameras.length>1?`<div class="field video-camera-picker"><label for="video-camera-select">Kamera</label><select id="video-camera-select" aria-label="Välj kamera">${cameras.map((camera,index)=>`<option value="${esc(camera.deviceId)}" ${camera.deviceId===selectedId?'selected':''}>${esc(camera.label||`Kamera ${index+1}`)}</option>`).join('')}</select></div>`:'';
-  showDialog('Videounderlag',videoSessionTitle(session),`${cameraControl}<video id="video-live-preview" class="video-live-preview" autoplay muted playsinline></video><p class="helper video-record-status" role="status">${cameras.length>1?'Välj bakre kamera i listan om den främre är vald. ':''}Kameran är redo. Inspelningen sparas bara när du väljer Spara klipp.</p>`,`${btn('Stäng','close-modal')}${btn('Starta inspelning','start-video-recording','primary')}`);
+  showDialog('Videounderlag',videoSessionTitle(session),`${cameraControl}${cameraControlsHtml(activeVideoCapture)}<video id="video-live-preview" class="video-live-preview" autoplay muted playsinline></video><p class="helper video-record-status" role="status">${cameras.length>1?'Välj bakre kamera i listan om den främre är vald. ':''}Kameran är redo. Inspelningen sparas bara när du väljer Spara klipp.</p>`,`${btn('Stäng','close-modal')}${btn('Starta inspelning','start-video-recording','primary')}`);
   const preview=modal.querySelector('#video-live-preview');
   if(preview){preview.srcObject=activeVideoCapture.stream;await preview.play().catch(()=>{});}
 }
@@ -559,6 +587,7 @@ async function performAction(action,el) {
     case 'import-video': {const session=videoSession(ui.videoSessionId);if(!session)throw new Error('Välj först vilken lektion klippet hör till.');document.querySelector('#video-file')?.click();break;}
     case 'record-video': {const session=videoSession(id||ui.videoSessionId);if(!session)throw new Error('Välj först vilken lektion klippet hör till.');await showVideoCapture(session);break;}
     case 'start-video-recording': {const capture=activeVideoCapture;if(!capture)throw new Error('Kameran är inte öppen.');capture.recorder.start(1000);const button=modal.querySelector('[data-action="start-video-recording"]'),status=modal.querySelector('.video-record-status'),picker=modal.querySelector('#video-camera-select');if(picker)picker.disabled=true;if(button){button.dataset.action='save-video-recording';button.textContent='Stoppa och spara';}if(status)status.textContent='Inspelning pågår. Tryck på Stoppa och spara när klippet är klart.';break;}
+    case 'toggle-video-torch': {const capture=activeVideoCapture;if(!capture)throw new Error('Kameran är inte öppen.');capture.torchOn=!capture.torchOn;await applyCameraSetting('torch',capture.torchOn);el.setAttribute('aria-pressed',String(capture.torchOn));el.textContent=capture.torchOn?'Lampa på':'Lampa av';break;}
     case 'save-video-recording':await saveVideoRecording();break;
     case 'play-video':await playVideo(id);break;
     case 'delete-video': {const video=videoItems.find(item=>item.id===id);if(!video)throw new Error('Videon hittades inte.');confirmDialog('Ta bort videoklippet?',`<strong>${esc(video.name)}</strong> tas bort från surfplattans appminne. Det går inte att ångra.`,'Ta bort video',async()=>{await deleteVideo(id);videoItems=await listVideos();modal.close();render();toast('Videoklippet är borttaget.');});break;}
@@ -601,6 +630,8 @@ document.addEventListener('change',async event=>{
   try {
     if(el.id==='video-session-select'){ui.videoSessionId=el.value;render();}
     if(el.id==='video-camera-select'){await switchVideoCamera(el.value);}
+    if(el.id==='video-zoom'||el.id==='video-exposureCompensation'){const key=el.id==='video-zoom'?'zoom':'exposureCompensation',output=modal.querySelector(`#${el.id}-value`),value=Number(el.value);if(output)output.textContent=key==='zoom'?`${value.toFixed(1)}×`:`${value.toFixed(1)} EV`;await applyCameraSetting(key,value);}
+    if(el.id==='video-focus-mode'){await applyCameraSetting('focusMode',el.value);}
     if(el.id==='video-file'&&el.files?.[0]){const file=el.files[0],session=videoSession(ui.videoSessionId);el.value='';if(!session)throw new Error('Välj först vilken lektion klippet hör till.');if(!file.type.startsWith('video/'))throw new Error('Välj en videofil.');await storeVideoBlob(file,session,file.name.replace(/\.[^.]+$/u,'')||'Videoklipp');render();toast('Videon har sparats under lektionen.');}
     if(el.id==='plan-year-group'){ui.planYearGroup=Number(el.value);render();}
     if(el.id==='schedule-template'){const template=LESSON_TEMPLATES.find(t=>t.id===el.value);if(template){const topic=modal.querySelector('#schedule-topic'),focus=modal.querySelector('#schedule-focus');if(topic)topic.value=template.topic;if(focus)focus.value=template.focus;}}
