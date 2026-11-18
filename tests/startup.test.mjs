@@ -45,6 +45,8 @@ test('Video library is local, session-linked, deletable and exported separately'
     readFile(new URL('../web/sw.js', import.meta.url), 'utf8'),
   ]);
   assert.match(app, /function renderVideoLibrary\(\)/);
+  assert.match(app, /function switchVideoCamera\(deviceId\)/);
+  assert.match(app, /id="video-camera-select"/);
   assert.match(app, /lesson-videos/);
   assert.match(app, /delete-all-videos/);
   assert.match(storage, /createObjectStore\('videos'/);
@@ -54,6 +56,7 @@ test('Video library is local, session-linked, deletable and exported separately'
   assert.match(activity, /RESOURCE_VIDEO_CAPTURE/);
   assert.match(activity, /writeVideoChunk/);
   assert.match(css, /\.video-library-controls/);
+  assert.match(css, /\.next-step-card\{[^}]*border:2px solid var\(--green\)/);
   assert.match(cache, /idrottspuls-v1\.7\.1/);
   assert.doesNotMatch(manifest, /android\.permission\.INTERNET|WRITE_EXTERNAL_STORAGE/);
 });
