@@ -91,6 +91,12 @@ export function observationGrades(o) {
 export const observationLabel = (o, separator = ' · ') => observationAssessments(o).map(assessmentLabel).join(separator);
 export const gradeLabel = o => observationGrades(o).join(' / ');
 export const hasObservation = o => !!(observationAssessments(o).length || observationGrades(o).length || o?.note);
+export function dailyTeachingStats(data, date) {
+  const lessons = lessonsForDate(data, date), sessions = lessons.filter(lesson => !lesson.planned);
+  const assessed = sessions.reduce((count, session) => count + (session.skipObservation ? 0 : (session.studentIds || []).filter(id => hasObservation(session.observations?.[id])).length), 0);
+  const attended = sessions.filter(session => session.attendanceSavedAt).reduce((count, session) => count + (session.studentIds || []).filter(id => !session.attendance?.[id]?.absent).length, 0);
+  return { lessons: lessons.length, assessments: assessed, attendance: attended };
+}
 export function toggleObservationChoice(o, kind, value) {
   const selected = kind === 'grades' ? observationGrades(o) : observationAssessments(o);
   const allowed = kind === 'grades' ? GRADES : kind === 'assessments' ? ASSESSMENTS.map(a => a.id) : [];

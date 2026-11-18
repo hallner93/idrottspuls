@@ -1,6 +1,10 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.7.5.
+En lokal lektionsbok för idrottslärare. Version 1.7.6.
+
+## Nytt i version 1.7.6
+
+- Startsidan visar valbara statistikvärden för den valda dagen: lektioner, sparade observationer och närvarande elevtillfällen.
 
 ## Nytt i version 1.7.5
 
