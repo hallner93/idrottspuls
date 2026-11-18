@@ -1,0 +1,59 @@
+@charset "UTF-8";
+/* Production design layer used by the Idrottspuls app. */
+html.design-ui{--bg:#f5f4ee;--surface:#fffefa;--ink:#25332e;--muted:#737c75;--line:#d9ddd4;--green:#24483b;--sage:#dfe6dc;--coral:#b96e52;--coral-light:#f7ebe4;--amber:#8b632d;--amber-light:#f3ead9;--red:#a84d43;--radius:9px;font-family:Inter,"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink)}
+html.design-ui body{background:var(--bg)}
+html.design-ui h1{font-family:Georgia,"Times New Roman",serif;font-size:36px;font-weight:600;letter-spacing:-.7px;color:#203b32}
+html.design-ui h2{font-size:19px;letter-spacing:-.2px;font-weight:650}
+html.design-ui .app-shell{grid-template-columns:226px minmax(0,1fr)}
+html.design-ui .sidebar{background:#183b31;color:#f4f3eb;border-right:0;padding:28px 17px 18px}
+html.design-ui .brand{color:#fbfaf5}
+html.design-ui .brand img{filter:brightness(0) invert(1);opacity:.9}
+html.design-ui .brand-note,html.design-ui .nav-caption{color:#bcc9bd}
+html.design-ui .nav-caption{letter-spacing:1.35px}
+html.design-ui .nav-link{color:#d4ddd4;border-radius:5px;min-height:45px}
+html.design-ui .nav-link:hover{background:#23483c}
+html.design-ui .nav-link.active{background:#365b4c;color:#fff;font-weight:650}
+html.design-ui .nav-link.active:before{background:#c57a5b;left:-17px}
+html.design-ui .local-card{background:#203f35;border-color:#35564a;color:#eff2e8;border-radius:6px}
+html.design-ui .local-card p,html.design-ui .profile small{color:#bfcbc0}
+html.design-ui .avatar{background:#dfe6dc;color:#24483b}
+html.design-ui .topbar{background:#f8f7f1;border-color:var(--line)}
+html.design-ui .content{max-width:1540px;padding:32px 38px 38px}
+html.design-ui .page-heading{align-items:end;margin-bottom:25px}
+html.design-ui .page-heading p{color:#747d76}
+html.design-ui .btn{border-radius:6px;font-weight:620;box-shadow:none}
+html.design-ui .btn.primary{background:#24483b;border-color:#24483b}
+html.design-ui .btn.primary:hover{background:#1b3b30}
+html.design-ui .btn.coral{background:#b96e52;border-color:#b96e52}
+html.design-ui .icon-btn{border-radius:6px}
+html.design-ui .dashboard-grid{grid-template-columns:minmax(0,1fr) 300px;gap:30px}
+html.design-ui .section-title{margin-bottom:13px}
+html.design-ui .date-nav .icon-btn{border:1px solid var(--line);background:var(--surface)}
+html.design-ui .week-strip{background:transparent;padding:0;gap:8px;margin-bottom:19px}
+html.design-ui .day-button{background:#fffefa;border:1px solid #d6dbd1;border-radius:5px;min-height:55px;color:#68736a}
+html.design-ui .day-button.selected{background:#b96e52;color:white;border-color:#b96e52;box-shadow:none}
+html.design-ui .day-button.today:not(.selected) strong{color:#24483b}
+html.design-ui .lesson-card{grid-template-columns:68px minmax(0,1fr);gap:12px;margin-bottom:12px}
+html.design-ui .time-column{padding-top:18px;color:#33443b}
+html.design-ui .time-column:after{background:#d5d9d0}
+html.design-ui .lesson-body{background:#fffefa;border:1px solid #d7dcd2;border-left:3px solid #879b89;border-radius:6px;padding:17px 18px;box-shadow:none}
+html.design-ui .lesson-body:hover{box-shadow:0 3px 10px #1b35270c}
+html.design-ui .class-label{font-size:18px;letter-spacing:-.15px}
+html.design-ui .lesson-topic{font-size:13px;color:#34453c;margin-bottom:11px}
+html.design-ui .lesson-meta{font-size:11px;gap:16px}
+html.design-ui .lesson-card-bottom{margin-top:12px;padding-top:11px;border-color:#e7e8e1}
+html.design-ui .card{border-color:#d9ddd4;border-radius:7px;box-shadow:none}
+html.design-ui .followup-card,html.design-ui .unfinished-card{padding:17px 16px}
+html.design-ui .followup-title{font-size:13px}
+html.design-ui .followup-person{padding:10px 0}
+html.design-ui .followup-person .avatar{width:32px;height:32px}
+html.design-ui .unfinished-lesson{padding:9px 0}
+html.design-ui .bottom-note{color:#7b827b}
+html.design-ui .badge{border-radius:4px}
+html.design-ui .modal-header,html.design-ui .modal-footer{background:#f8f7f1}
+html.design-ui dialog{border-radius:9px}
+@media(max-width:980px){html.design-ui .sidebar{background:#183b31}html.design-ui .app-shell{grid-template-columns:78px minmax(0,1fr)}html.design-ui .content{padding:26px 25px 34px}}
+@media(max-width:790px){html.design-ui .dashboard-grid{grid-template-columns:1fr}html.design-ui .dashboard-aside{display:grid;grid-template-columns:1fr 1fr;gap:13px}}
+@media(max-width:590px){html.design-ui .app-shell{display:block}html.design-ui .sidebar{background:#183b31;border-top:1px solid #35564a}html.design-ui .sidebar .nav-link{color:#d4ddd4}html.design-ui .sidebar .nav-link.active{background:#365b4c;color:#fff}html.design-ui .topbar{background:#f8f7f1}html.design-ui .content{padding:22px 16px 20px}html.design-ui h1{font-size:29px}html.design-ui .page-heading{align-items:start}html.design-ui .dashboard-aside{display:block}html.design-ui .followup-card{margin-top:10px}html.design-ui .lesson-card{grid-template-columns:49px minmax(0,1fr);gap:8px}html.design-ui .lesson-body{padding:15px 13px}}
+
+@media(max-width:590px){html.design-ui .sidebar .nav-link{min-width:40px;padding-left:5px;padding-right:5px}}

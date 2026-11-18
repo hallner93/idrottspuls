@@ -18,20 +18,17 @@ test('App entry module parses before the loading screen can initialize', () => {
   execFileSync(process.execPath, ['--check', fileURLToPath(new URL('../web/app.js', import.meta.url))]);
 });
 
-test('The Android design preview is isolated and its stylesheet is available offline', async () => {
-  const [html, cache, gradle, activity, styles] = await Promise.all([
+test('The revised design is active in production and available offline', async () => {
+  const [html, cache, app, styles] = await Promise.all([
     readFile(new URL('../web/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../web/sw.js', import.meta.url), 'utf8'),
-    readFile(new URL('../android/app/build.gradle', import.meta.url), 'utf8'),
-    readFile(new URL('../android/app/src/main/java/se/idrottspuls/app/MainActivity.java', import.meta.url), 'utf8'),
-    readFile(new URL('../web/styles-preview.css', import.meta.url), 'utf8'),
+    readFile(new URL('../web/app.js', import.meta.url), 'utf8'),
+    readFile(new URL('../web/styles-design.css', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /styles-preview\.css/);
-  assert.match(cache, /styles-preview\.css/);
-  assert.match(gradle, /applicationIdSuffix '\.preview'/);
-  assert.match(gradle, /Idrottspuls Förhandsvisning/);
-  assert.match(activity, /BUILD_TYPE/);
-  assert.match(styles, /html\.preview-ui/);
+  assert.match(html, /styles-design\.css/);
+  assert.match(cache, /styles-design\.css/);
+  assert.match(app, /classList\.add\('design-ui'\)/);
+  assert.match(styles, /html\.design-ui/);
 });
 
 test('Video library is local, session-linked, deletable and exported separately', async () => {
@@ -55,13 +52,14 @@ test('Video library is local, session-linked, deletable and exported separately'
   assert.match(storage, /createObjectStore\('videos'/);
   assert.match(storage, /exportVideoCopy/);
   assert.match(html, /media-src 'self' blob:/);
-  assert.match(manifest, /android\.permission\.CAMERA/);
-  assert.match(activity, /RESOURCE_VIDEO_CAPTURE/);
+  assert.match(activity, /MediaStore\.ACTION_VIDEO_CAPTURE/);
+  assert.match(activity, /isCaptureEnabled\(\)/);
+  assert.match(app, /setAttribute\('capture','environment'\)/);
   assert.match(activity, /writeVideoChunk/);
   assert.match(css, /\.video-library-controls/);
   assert.match(css, /\.next-step-card\{[^}]*border:2px solid var\(--green\)/);
-  assert.match(cache, /idrottspuls-v1\.7\.2/);
-  assert.doesNotMatch(manifest, /android\.permission\.INTERNET|WRITE_EXTERNAL_STORAGE/);
+  assert.match(cache, /idrottspuls-v1\.7\.3/);
+  assert.doesNotMatch(manifest, /android\.permission\.CAMERA|android\.permission\.INTERNET|WRITE_EXTERNAL_STORAGE/);
 });
 
 test('Summary navigation combines absence, observations, and final assessments', async () => {
