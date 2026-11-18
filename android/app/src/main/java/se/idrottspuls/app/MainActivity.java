@@ -13,6 +13,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.PermissionRequest;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -33,13 +34,15 @@ import java.nio.charset.StandardCharsets;
 
 /** Local-only Android shell. All code/assets are bundled and all data stays in app-private files. */
 public class MainActivity extends Activity {
-    private static final int EXPORT_REQUEST = 701, IMPORT_REQUEST = 702;
+    private static final int EXPORT_REQUEST = 701, IMPORT_REQUEST = 702, VIDEO_EXPORT_REQUEST = 703, CAMERA_PERMISSION_REQUEST = 704;
     private static final String ORIGIN = "https://appassets.androidplatform.net";
     private static final int MAX_BYTES = 20_000_000;
     private WebView webView;
     private ValueCallback<Uri[]> chooserCallback;
     private byte[] pendingExport;
     private AtomicFile stateFile;
+    private PermissionRequest cameraPermissionRequest;
+    private OutputStream videoExportOutput;
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,10 +100,24 @@ public class MainActivity extends Activity {
                 chooserCallback = callback;
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("*/*");
+                String[] acceptTypes = params.getAcceptTypes();
+                String mimeType = acceptTypes != null && acceptTypes.length > 0 && acceptTypes[0] != null && !acceptTypes[0].isEmpty() ? acceptTypes[0] : "*/*";
+                intent.setType(mimeType);
                 try { startActivityForResult(intent, IMPORT_REQUEST); }
                 catch (Exception e) { chooserCallback.onReceiveValue(null); chooserCallback = null; }
                 return true;
+            }
+            @Override public void onPermissionRequest(PermissionRequest request) {
+                runOnUiThread(() -> {
+                    boolean videoOnly = request.getResources().length == 1 && PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(request.getResources()[0]);
+                    if (!videoOnly) { request.deny(); return; }
+                    if (Build.VERSION.SDK_INT < 23 || checkSelfPermission(android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+                    } else if (cameraPermissionRequest == null) {
+                        cameraPermissionRequest = request;
+                        requestPermissions(new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST);
+                    } else request.deny();
+                });
             }
         });
         webView.addJavascriptInterface(new LocalBridge(), "IdrottspulsNative");
@@ -139,6 +156,25 @@ public class MainActivity extends Activity {
                 } catch (Exception e) { runOnUiThread(() -> exportResult(false, "Kunde inte spara filen. Försök igen.")); }
             }).start();
         }
+        if (requestCode == VIDEO_EXPORT_REQUEST) {
+            if (resultCode != RESULT_OK || result == null || result.getData() == null) { videoExportOutput = null; videoExportResult(false, "Exporten avbröts."); return; }
+            try {
+                videoExportOutput = getContentResolver().openOutputStream(result.getData(), "wt");
+                if (videoExportOutput == null) throw new Exception("Filen kunde inte öppnas.");
+                videoExportResult(true, "Redo att spara.");
+            } catch (Exception e) { videoExportOutput = null; videoExportResult(false, "Filen kunde inte öppnas."); }
+        }
+    }
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERMISSION_REQUEST && cameraPermissionRequest != null) {
+            PermissionRequest request = cameraPermissionRequest; cameraPermissionRequest = null;
+            if (grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+            else request.deny();
+        }
+    }
+    private void videoExportResult(boolean ok, String message) {
+        if (webView != null) webView.evaluateJavascript("window.idrottspulsVideoExportReady && window.idrottspulsVideoExportReady(" + ok + "," + JSONObject.quote(message) + ")", null);
     }
     public class LocalBridge {
         @JavascriptInterface public synchronized String readState() {
@@ -181,9 +217,41 @@ public class MainActivity extends Activity {
                 });
             } catch (Exception e) { runOnUiThread(() -> exportResult(false, "Exporten kunde inte skapas.")); }
         }
+        @JavascriptInterface public void beginVideoExport(String name, String mime) {
+            runOnUiThread(() -> {
+                if (videoExportOutput != null) { videoExportResult(false, "En videoexport pågår redan."); return; }
+                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType(mime == null || mime.isEmpty() ? "video/mp4" : mime);
+                intent.putExtra(Intent.EXTRA_TITLE, name == null ? "Idrottspuls-video.mp4" : name.replaceAll("[\\\\/:*?\"<>|]", "_"));
+                try { startActivityForResult(intent, VIDEO_EXPORT_REQUEST); }
+                catch (Exception e) { videoExportResult(false, "Ingen filväljare kunde öppnas."); }
+            });
+        }
+        @JavascriptInterface public synchronized String writeVideoChunk(String encoded) {
+            try {
+                if (videoExportOutput == null) return "Ingen exportfil är vald.";
+                byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
+                videoExportOutput.write(bytes);
+                return "OK";
+            } catch (Exception e) { return "Videon kunde inte skrivas. Kontrollera ledigt utrymme."; }
+        }
+        @JavascriptInterface public synchronized String finishVideoExport() {
+            try {
+                if (videoExportOutput == null) return "Ingen exportfil är vald.";
+                videoExportOutput.flush(); videoExportOutput.close(); videoExportOutput = null;
+                return "OK";
+            } catch (Exception e) { videoExportOutput = null; return "Videoexporten misslyckades."; }
+        }
+        @JavascriptInterface public synchronized void cancelVideoExport() {
+            try { if (videoExportOutput != null) videoExportOutput.close(); } catch (Exception ignored) {}
+            videoExportOutput = null;
+        }
     }
     @Override protected void onDestroy() {
         if (chooserCallback != null) chooserCallback.onReceiveValue(null);
+        if (cameraPermissionRequest != null) { cameraPermissionRequest.deny(); cameraPermissionRequest = null; }
+        try { if (videoExportOutput != null) videoExportOutput.close(); } catch (Exception ignored) {}
         if (webView != null) { webView.removeJavascriptInterface("IdrottspulsNative"); webView.destroy(); webView = null; }
         super.onDestroy();
     }

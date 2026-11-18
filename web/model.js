@@ -27,7 +27,7 @@ export function nextTermStart(date) {
   return current.semester==='HT'?`${nextYear}-01-01`:`${nextYear}-08-01`;
 }
 export function emptyData() {
-  return { classes: [], schedules: [], sessions: [], breaks: [], lessonPlans: [], termArchives: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green' } };
+  return { classes: [], schedules: [], sessions: [], breaks: [], lessonPlans: [], termArchives: [], settings: { school: '', teacher: '', termStart: termStart(), threshold: 3, lastBackup: null, theme: 'green', homeStats: { lessons: true, assessments: true, attendance: true } } };
 }
 export const studentName = s => `${s.first} ${s.last}`.trim();
 export function searchClasses(classes, query = '') {
@@ -361,6 +361,8 @@ export function upgradeData(data) {
   upgraded.termArchives ??= [];
   for (const c of upgraded.classes) c.yearGroup ??= null;
   upgraded.settings.theme ??= 'green';
+  upgraded.settings.homeStats ??= { lessons: true, assessments: true, attendance: true };
+  for (const key of ['lessons', 'assessments', 'attendance']) upgraded.settings.homeStats[key] ??= true;
   for (const session of upgraded.sessions) session.finalAssessment ??= false;
   for (const session of upgraded.sessions) for (const [id, o] of Object.entries(session.observations)) {
     const { assessment, grade, ...rest } = o;

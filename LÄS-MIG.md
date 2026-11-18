@@ -1,6 +1,14 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.6.1.
+En lokal lektionsbok för idrottslärare. Version 1.7.0.
+
+## Nytt i version 1.7.0
+
+- Sammanställningen samlar närvaro, utrustning, observationer och slutbedömningar i tydliga flikar. Frånvaro och utrustning visas med samma genomförda lektionsunderlag.
+- Slutbedömningar kan filtreras efter period och klass och visas sorterade efter klass, elev och område. Frånvarande elever är tydligt markerade.
+- Inställningar kan dölja de tre snabbstatistikkorten på översikten. Oavslutade lektioner visas som nästa steg.
+- Dagens lektioner har diskret färgkodade rutor. Surfplattans liggande läge använder en luftigare layout.
+- Videobiblioteket spelar in eller importerar klipp och kopplar dem till en lektion. Klippen sparas lokalt på enheten, kan exporteras separat och kan raderas ett och ett eller tillsammans. Videofiler ingår inte i JSON-säkerhetskopian.
 
 ## Nytt i version 1.6.1
 
@@ -111,11 +119,11 @@ Lektionsbedömningarna är observationsunderlag. Appen räknar inte fram något 
 
 ## Lagring och säkerhetskopior
 
-Webbversionen använder IndexedDB på den aktuella enheten. En service worker lagrar appfiler för offlineanvändning efter första lyckade öppningen. Begär beständig webbläsarlagring under **Inställningar**; webbläsaren kan neka begäran. Webbversionen tillåter ett skrivande fönster åt gången för att undvika motstridiga sparningar.
+Webbversionen använder IndexedDB på den aktuella enheten. Video lagras separat från lektionsbokens data som lokala videofiler i samma appminne. Android WebView använder den lokala databasen för videorna. Appfilerna lagras för offlineanvändning efter första lyckade öppningen. Begär beständig webbläsarlagring under **Inställningar**; webbläsaren kan neka begäran. Webbversionen tillåter ett skrivande fönster åt gången för att undvika motstridiga sparningar.
 
 Androidprojektet använder i stället en atomiskt skriven fil i appens interna lagring. Appfilerna ligger i installationspaketet. Den deklarerar ingen internetbehörighet och har automatisk Androidbackup avstängd. Det finns ingen inloggning, analyskod, molndatabas eller extern teckensnittstjänst.
 
-Använd **Export & backup → Skapa säkerhetskopia** regelbundet. Kopian innehåller alla uppgifter i det aktiva läget. I Androids filväljare väljer du en plats **på enheten** för att hålla även exporten lokal. Om du själv väljer en molnleverantör i filväljaren hanterar den leverantören filen.
+Använd **Export & backup → Skapa säkerhetskopia** regelbundet. Kopian innehåller alla lektionsboksuppgifter i det aktiva läget; videor exporteras separat från **Videobibliotek**. I Androids filväljare väljer du en plats **på enheten** för att hålla exporten lokal. Om du själv väljer en molnleverantör i filväljaren hanterar den leverantören filen.
 
 En avinstallation, rensning av appdata eller rensning av webbläsarens webbplatsdata tar bort den lokala lektionsboken. Excel-export är inte en fullständig återställningskopia. Backupfilen är okrypterad och innehåller elevuppgifter; använd en lagringsplats som skolan godkänner och surfplattans skärmlås.
 

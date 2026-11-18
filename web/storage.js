@@ -5,11 +5,94 @@ let saveQueue = Promise.resolve();
 export const storageType = native ? 'Appens interna lagring' : 'Lokal databas i den här webbläsaren';
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('idrottspuls', 1);
-    request.onupgradeneeded = () => request.result.createObjectStore('workspace');
+    const request = indexedDB.open('idrottspuls', 2);
+    request.onupgradeneeded = () => {
+      const stores = request.result.objectStoreNames;
+      if (!stores.contains('workspace')) request.result.createObjectStore('workspace');
+      if (!stores.contains('videos')) request.result.createObjectStore('videos', { keyPath: 'id' });
+    };
     request.onsuccess = () => { db = request.result; db.onversionchange = () => db.close(); resolve(db); };
     request.onerror = () => reject(request.error);
     request.onblocked = () => reject(new Error('Stäng andra Idrottspuls-fönster och försök igen.'));
+  });
+}
+export async function listVideos() {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction('videos').objectStore('videos').getAll();
+    request.onsuccess = () => resolve(request.result.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+    request.onerror = () => reject(request.error);
+  });
+}
+export async function getVideo(id) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction('videos').objectStore('videos').get(id);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+export async function saveVideo(video) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('videos', 'readwrite');
+    tx.objectStore('videos').put(video);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Videon kunde inte sparas på enheten. Kontrollera ledigt lagringsutrymme.'));
+  });
+}
+export async function deleteVideo(id) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('videos', 'readwrite');
+    tx.objectStore('videos').delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Videon kunde inte tas bort.'));
+  });
+}
+export async function deleteAllVideos() {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('videos', 'readwrite');
+    tx.objectStore('videos').clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Videomaterialet kunde inte tas bort.'));
+  });
+}
+let pendingVideoExport;
+if (native) window.idrottspulsVideoExportReady = async (ok, message) => {
+  const pending = pendingVideoExport;
+  if (!pending) return;
+  if (!ok) { pending.resolve({ saved: false, message }); pendingVideoExport = null; return; }
+  try {
+    for (let offset = 0; offset < pending.blob.size; offset += 192 * 1024) {
+      const bytes = new Uint8Array(await pending.blob.slice(offset, offset + 192 * 1024).arrayBuffer());
+      const result = native.writeVideoChunk(base64(bytes));
+      if (result !== 'OK') throw new Error(result || 'Videon kunde inte kopieras.');
+    }
+    const result = native.finishVideoExport();
+    if (result !== 'OK') throw new Error(result || 'Kopieringen misslyckades.');
+    pending.resolve({ saved: true, message: 'Videon är sparad på vald plats.' });
+  } catch (error) {
+    native.cancelVideoExport();
+    pending.resolve({ saved: false, message: error.message || 'Videon kunde inte kopieras.' });
+  } finally { pendingVideoExport = null; }
+};
+export async function exportVideoCopy(name, blob) {
+  if (!native) {
+    const url = URL.createObjectURL(blob), link = document.createElement('a');
+    link.href = url; link.download = name; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return { saved: true, message: 'Kopian har laddats ned. Välj en plats på enheten.' };
+  }
+  if (pendingVideoExport) throw new Error('Slutför den pågående videoexporten först.');
+  return new Promise((resolve, reject) => {
+    pendingVideoExport = { resolve, blob };
+    try { native.beginVideoExport(name, blob.type || 'video/mp4'); }
+    catch (error) { pendingVideoExport = null; reject(error); }
   });
 }
 export async function loadWorkspace() {
