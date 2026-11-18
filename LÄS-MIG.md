@@ -5,6 +5,8 @@ En lokal lektionsbok för idrottslärare. Version 1.7.3.
 ## Nytt i version 1.7.3
 
 - Den uppdaterade designen används nu i den vanliga appen.
+- Färgtemat styr även vänstermenyn, primärknapparna och vald dag. Sidomenyn visar loggan och hela lärarprofilen bättre i liggande läge.
+- Området för en slutbedömning anges i lektionsvyn under ”Vad arbetar ni med?” och blir områdesrubrik i Excel.
 - Videoinspelning på Android öppnar surfplattans kameraapp och importerar sedan klippet till vald lektion. Beroende på kameran kan originalet också sparas i Galleri; borttagning i Idrottspuls tar bort appens egen kopia.
 
 ## Nytt i version 1.7.2
