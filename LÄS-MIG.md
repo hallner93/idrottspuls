@@ -1,6 +1,10 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.7.1.
+En lokal lektionsbok för idrottslärare. Version 1.7.2.
+
+## Nytt i version 1.7.2
+
+- Gör rutan ”Nästa steg” tydlig på översikten och låter dig välja fram- eller bakkamera vid videoinspelning.
 
 ## Nytt i version 1.7.1
 
