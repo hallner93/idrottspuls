@@ -73,6 +73,11 @@ export function validateStudentList(rows) {
 }
 const collator = new Intl.Collator('sv', { sensitivity: 'base', numeric: true });
 export const sortedStudents = list => [...list].sort((a, b) => collator.compare(a.last, b.last) || collator.compare(a.first, b.first));
+export function sortFinalAssessmentRows(rows, mode = 'class') {
+  const byStudent = (a, b) => collator.compare(a.student.last, b.student.last) || collator.compare(a.student.first, b.student.first);
+  const byClass = (a, b) => collator.compare(a.student.className, b.student.className);
+  return [...rows].sort((a, b) => (mode === 'student' ? byStudent(a, b) || byClass(a, b) : byClass(a, b) || byStudent(a, b)) || b.session.date.localeCompare(a.session.date) || b.session.start.localeCompare(a.session.start));
+}
 export const assessmentLabel = id => ASSESSMENTS.find(a => a.id === id)?.label || 'Ingen observationsmarkering';
 // Read older single selections as well as the current multi-selection format.
 export function observationAssessments(o) {
