@@ -19,16 +19,33 @@ test('App entry module parses before the loading screen can initialize', () => {
 });
 
 test('The revised design is active in production and available offline', async () => {
-  const [html, cache, app, styles] = await Promise.all([
+  const [html, cache, app, styles, appStyles] = await Promise.all([
     readFile(new URL('../web/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../web/sw.js', import.meta.url), 'utf8'),
     readFile(new URL('../web/app.js', import.meta.url), 'utf8'),
     readFile(new URL('../web/styles-design.css', import.meta.url), 'utf8'),
+    readFile(new URL('../web/styles.css', import.meta.url), 'utf8'),
   ]);
   assert.match(html, /styles-design\.css/);
   assert.match(cache, /styles-design\.css/);
   assert.match(app, /classList\.add\('design-ui'\)/);
   assert.match(styles, /html\.design-ui/);
+  assert.match(styles, /html\.design-ui \.brand img\{filter:none;opacity:1\}/);
+  assert.match(styles, /orientation:landscape\).*\.profile\{display:block\}/);
+  assert.match(styles, /\.sidebar\{background:var\(--green-dark\)/);
+  assert.match(styles, /\.btn\.primary\{background:var\(--green\)/);
+  assert.match(styles, /\.day-button\.selected\{background:var\(--green\)/);
+  assert.match(appStyles, /:root\[data-theme="blue"\]\{--green:#365b7c;--green-dark:#20384f;--sage:#e8f0f7\}/);
+});
+
+test('Final-assessment area comes from the lesson topic and is explained in the lesson view', async () => {
+  const [app, model] = await Promise.all([
+    readFile(new URL('../web/app.js', import.meta.url), 'utf8'),
+    readFile(new URL('../web/model.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(app, /Området hämtas från fältet Vad arbetar ni med\?/);
+  assert.match(app, /Detta namn blir områdesrubrik i Excel om Slutbedömning är markerad\./);
+  assert.match(model, /finalArea: session\.finalAssessment \? session\.topic \|\| 'Ej angivet'/);
 });
 
 test('Video library is local, session-linked, deletable and exported separately', async () => {
@@ -58,7 +75,7 @@ test('Video library is local, session-linked, deletable and exported separately'
   assert.match(activity, /writeVideoChunk/);
   assert.match(css, /\.video-library-controls/);
   assert.match(css, /\.next-step-card\{[^}]*border:2px solid var\(--green\)/);
-  assert.match(cache, /idrottspuls-v1\.7\.3/);
+  assert.match(cache, /idrottspuls-v1\.7\.4/);
   assert.doesNotMatch(manifest, /android\.permission\.CAMERA|android\.permission\.INTERNET|WRITE_EXTERNAL_STORAGE/);
 });
 
