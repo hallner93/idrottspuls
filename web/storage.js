@@ -5,11 +5,12 @@ let saveQueue = Promise.resolve();
 export const storageType = native ? 'Appens interna lagring' : 'Lokal databas i den här webbläsaren';
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('idrottspuls', 2);
+    const request = indexedDB.open('idrottspuls', 3);
     request.onupgradeneeded = () => {
       const stores = request.result.objectStoreNames;
       if (!stores.contains('workspace')) request.result.createObjectStore('workspace');
       if (!stores.contains('videos')) request.result.createObjectStore('videos', { keyPath: 'id' });
+      if (!stores.contains('photos')) request.result.createObjectStore('photos', { keyPath: 'id' });
     };
     request.onsuccess = () => { db = request.result; db.onversionchange = () => db.close(); resolve(db); };
     request.onerror = () => reject(request.error);
@@ -60,6 +61,52 @@ export async function deleteAllVideos() {
     tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error || new Error('Videomaterialet kunde inte tas bort.'));
+  });
+}
+export async function listPhotos() {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction('photos').objectStore('photos').getAll();
+    request.onsuccess = () => resolve(request.result.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+    request.onerror = () => reject(request.error);
+  });
+}
+export async function getPhoto(id) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction('photos').objectStore('photos').get(id);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+export async function savePhoto(photo) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    tx.objectStore('photos').put(photo);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Bilden kunde inte sparas på enheten. Kontrollera ledigt lagringsutrymme.'));
+  });
+}
+export async function deletePhoto(id) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    tx.objectStore('photos').delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Bilden kunde inte tas bort.'));
+  });
+}
+export async function deleteAllPhotos() {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    tx.objectStore('photos').clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Bilderna kunde inte tas bort.'));
   });
 }
 let pendingVideoExport;

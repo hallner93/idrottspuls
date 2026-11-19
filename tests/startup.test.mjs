@@ -75,13 +75,21 @@ test('Video library is local, session-linked, deletable and exported separately'
   assert.match(activity, /writeVideoChunk/);
   assert.match(css, /\.video-library-controls/);
   assert.match(css, /\.next-step-card\{[^}]*border:2px solid var\(--green\)/);
-  assert.match(cache, /idrottspuls-v1\.7\.6/);
+  assert.match(cache, /idrottspuls-v1\.7\.7/);
   assert.doesNotMatch(manifest, /android\.permission\.CAMERA|android\.permission\.INTERNET|WRITE_EXTERNAL_STORAGE/);
+  assert.match(app, /case 'capture-photo'/);
+  assert.match(app, /id="final-student-search"/);
+  assert.match(app, /renderFinalAssessmentCards/);
+  assert.match(storage, /createObjectStore\('photos'/);
+  assert.match(storage, /export async function deleteAllPhotos/);
+  assert.match(activity, /MediaStore\.ACTION_IMAGE_CAPTURE/);
+  assert.match(activity, /androidx\.core\.content\.FileProvider/);
+  assert.match(manifest, /androidx\.core\.content\.FileProvider/);
 });
 
 test('Summary navigation combines absence, observations, and final assessments', async () => {
   const source = await readFile(new URL('../web/app.js', import.meta.url), 'utf8');
-  assert.match(source, /\['videos','video','Videobibliotek'\]/);
+  assert.match(source, /\['videos','video','Video & bilder'\]/);
   assert.match(source, /function renderUnifiedSummary\(\)/);
   assert.match(source, /\['finals','Slutbedömningar'\]/);
   assert.match(source, /data-summary-sort/);
@@ -90,5 +98,7 @@ test('Summary navigation combines absence, observations, and final assessments',
   assert.match(source, /data-home-stat-card/);
   assert.match(source, /Lektioner för den valda dagen/);
   assert.match(source, /Sparade elevobservationer den valda dagen/);
+  assert.match(source, /id="final-student-search"/);
+  assert.match(source, /filterFinalAssessmentRows\(ui\.finalRows/);
   assert.match(source, /student:\{\.\.\.student,className:session\.className\|\|d\.classes\.find\(c=>c\.id===session\.classId\)\?\.name/);
 });

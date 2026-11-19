@@ -22,6 +22,7 @@ import android.webkit.WebViewClient;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
+import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
 import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
@@ -34,7 +35,7 @@ import java.nio.charset.StandardCharsets;
 
 /** Local-only Android shell. All code/assets are bundled and all data stays in app-private files. */
 public class MainActivity extends Activity {
-    private static final int EXPORT_REQUEST = 701, IMPORT_REQUEST = 702, VIDEO_EXPORT_REQUEST = 703;
+    private static final int EXPORT_REQUEST = 701, IMPORT_REQUEST = 702, VIDEO_EXPORT_REQUEST = 703, PHOTO_CAPTURE_REQUEST = 704;
     private static final String ORIGIN = "https://appassets.androidplatform.net";
     private static final int MAX_BYTES = 20_000_000;
     private WebView webView;
@@ -42,6 +43,7 @@ public class MainActivity extends Activity {
     private byte[] pendingExport;
     private AtomicFile stateFile;
     private OutputStream videoExportOutput;
+    private File photoCaptureFile;
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,13 +102,15 @@ public class MainActivity extends Activity {
                 String[] acceptTypes = params.getAcceptTypes();
                 String mimeType = acceptTypes != null && acceptTypes.length > 0 && acceptTypes[0] != null && !acceptTypes[0].isEmpty() ? acceptTypes[0] : "*/*";
                 boolean videoCapture = params.isCaptureEnabled() && acceptTypes != null && java.util.Arrays.stream(acceptTypes).anyMatch(type -> type != null && type.startsWith("video/"));
+                boolean imageCapture = params.isCaptureEnabled() && acceptTypes != null && java.util.Arrays.stream(acceptTypes).anyMatch(type -> type != null && type.startsWith("image/"));
                 try {
                     if (videoCapture) {
                         Intent camera = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
                         camera.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1);
                         try { startActivityForResult(camera, IMPORT_REQUEST); }
                         catch (Exception noCameraApp) { launchOpenDocument(mimeType); }
-                    } else launchOpenDocument(mimeType);
+                    } else if (imageCapture) launchPhotoCamera(mimeType);
+                    else launchOpenDocument(mimeType);
                 } catch (Exception e) { chooserCallback.onReceiveValue(null); chooserCallback = null; }
                 return true;
             }
@@ -120,6 +124,18 @@ public class MainActivity extends Activity {
         picker.addCategory(Intent.CATEGORY_OPENABLE);
         picker.setType(mimeType);
         startActivityForResult(picker, IMPORT_REQUEST);
+    }
+    private void launchPhotoCamera(String mimeType) throws Exception {
+        File directory = new File(getCacheDir(), "camera");
+        if (!directory.exists() && !directory.mkdirs()) throw new Exception("Kameramappen kunde inte skapas.");
+        photoCaptureFile = File.createTempFile("idrottspuls-", ".jpg", directory);
+        Uri output = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoCaptureFile);
+        Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        camera.putExtra(MediaStore.EXTRA_OUTPUT, output);
+        camera.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        camera.setClipData(android.content.ClipData.newRawUri("Idrottspuls foto", output));
+        try { startActivityForResult(camera, PHOTO_CAPTURE_REQUEST); }
+        catch (Exception noCameraApp) { photoCaptureFile.delete(); photoCaptureFile = null; launchOpenDocument(mimeType); }
     }
     private boolean isLocal(Uri uri) {
         return "https".equals(uri.getScheme()) && "appassets.androidplatform.net".equals(uri.getHost()) && uri.getPort() == -1 && uri.getPath() != null && uri.getPath().startsWith("/assets/www/");
@@ -136,6 +152,12 @@ public class MainActivity extends Activity {
     }
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent result) {
         super.onActivityResult(requestCode, resultCode, result);
+        if (requestCode == PHOTO_CAPTURE_REQUEST) {
+            Uri captured = resultCode == RESULT_OK && photoCaptureFile != null && photoCaptureFile.isFile() && photoCaptureFile.length() > 0
+                ? FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoCaptureFile) : null;
+            if (captured == null && photoCaptureFile != null) { photoCaptureFile.delete(); photoCaptureFile = null; }
+            if (chooserCallback != null) { chooserCallback.onReceiveValue(captured == null ? null : new Uri[]{captured}); chooserCallback = null; }
+        }
         if (requestCode == IMPORT_REQUEST && chooserCallback != null) {
             chooserCallback.onReceiveValue(resultCode == RESULT_OK && result != null && result.getData() != null ? new Uri[]{result.getData()} : null);
             chooserCallback = null;
@@ -235,9 +257,16 @@ public class MainActivity extends Activity {
             try { if (videoExportOutput != null) videoExportOutput.close(); } catch (Exception ignored) {}
             videoExportOutput = null;
         }
+        @JavascriptInterface public synchronized String deleteCameraCapture() {
+            if (photoCaptureFile == null) return "OK";
+            boolean removed = !photoCaptureFile.exists() || photoCaptureFile.delete();
+            if (removed) photoCaptureFile = null;
+            return removed ? "OK" : "Kamerabilden kunde inte rensas från tillfälligt minne.";
+        }
     }
     @Override protected void onDestroy() {
         if (chooserCallback != null) chooserCallback.onReceiveValue(null);
+        if (photoCaptureFile != null && photoCaptureFile.exists()) photoCaptureFile.delete();
         try { if (videoExportOutput != null) videoExportOutput.close(); } catch (Exception ignored) {}
         if (webView != null) { webView.removeJavascriptInterface("IdrottspulsNative"); webView.destroy(); webView = null; }
         super.onDestroy();
