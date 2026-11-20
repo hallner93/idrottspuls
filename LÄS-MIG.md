@@ -1,6 +1,11 @@
 # Idrottspuls
 
-En lokal lektionsbok för idrottslärare. Version 1.7.6.
+En lokal lektionsbok för idrottslärare. Version 1.7.7.
+
+## Nytt i version 1.7.7
+
+- Slutbedömningar kan filtreras på elevnamn så att elevens samtliga bedömningar i vald period visas tillsammans.
+- Fotografera övningar direkt från lektionen. Bilder sparas lokalt, sorteras per lektion och kan visas, exporteras och tas bort i Video & bilder.
 
 ## Nytt i version 1.7.6
 
@@ -181,6 +186,6 @@ Officiell dokumentation: [Lokalt innehåll i Android WebView](https://developer.
 
 Appens webbdel har inga npm-beroenden och behöver inget byggsteg. Kör `node --test tests/model.test.mjs` från projektmappen för regler, sortering, historik, exporturval och backupvalidering. Testsviten skapar en liten provfil för Excel-kontroll i `work/qa` relativt arbetsytan.
 
-Den här versionen har 29 godkända automatiska kontroller. En exporterad arbetsbok har dessutom öppnats med openpyxl för kontroll av svenska tecken, numeriska minuter, textceller, filter och låst rubrikrad. Gränssnittet för namnimport har provats i den lokala förhandsvisningen. Se `VERIFIERING.md` för genomförda kontroller och kvarvarande Androidkontroller.
+Den här versionen har 70 godkända regressionstester. En exporterad arbetsbok har dessutom öppnats med openpyxl för kontroll av svenska tecken, numeriska minuter, textceller, filter och låst rubrikrad. Gränssnittet för namnimport har provats i den lokala förhandsvisningen. Se `VERIFIERING.md` för genomförda kontroller och kvarvarande Androidkontroller.
 
 Källor: `web/app.js` innehåller gränssnittet, `web/model.js` reglerna, `web/storage.js` lagringen och `web/xlsx.js` Excel-skrivaren. Ändra versionsnamnet i `web/sw.js` när cachade webbfiler uppdateras. Ingen förändring av service workern behövs för Android, där den inte registreras.

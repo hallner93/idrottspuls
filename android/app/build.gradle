@@ -10,8 +10,8 @@ android {
         applicationId 'se.idrottspuls.app'
         minSdk 26
         targetSdk 36
-        versionCode 30
-        versionName '1.7.6'
+        versionCode 31
+        versionName '1.7.7'
         resValue 'string', 'app_name', 'Idrottspuls'
     }
     compileOptions {
@@ -51,5 +51,8 @@ tasks.register('syncWebAssets', Copy) {
     into layout.buildDirectory.dir('generated/idrottspulsAssets/www')
 }
 tasks.named('preBuild').configure { dependsOn 'syncWebAssets' }
-dependencies { implementation 'androidx.webkit:webkit:1.14.0' }
+dependencies {
+    implementation 'androidx.webkit:webkit:1.14.0'
+    implementation 'androidx.core:core:1.15.0'
+}
 

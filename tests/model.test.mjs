@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, dailyTeachingStats, studentStats, filteredSessions, studentFinalAssessments, sortFinalAssessmentRows, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents, attendanceExceptions } from '../web/model.js';
+import { SCHEMA, emptyData, demoData, materialize, blankAttendance, followup, followupSummaries, validateData, parseBackup, exportRows, exportRowsByStudent, exportTermPlanRows, roster, lessonsForDate, dailyTeachingStats, studentStats, filteredSessions, studentFinalAssessments, sortFinalAssessmentRows, filterFinalAssessmentRows, reportedLessons, upgradeData, upgradeWorkspace, observationAssessments, observationGrades, observationLabel, gradeLabel, hasObservation, toggleObservationChoice, parseStudentList, validateStudentList, searchClasses, unfinishedSessions, weekStartDate, schedulePlanSlot, lessonPlan, setLessonPlan, copyLessonPlanWeek, planWeekStatus, termPlanWeeks, termInfo, nextTermStart, transitionTerm, observationStudents, attendanceExceptions } from '../web/model.js';
 import { createXlsx } from '../web/xlsx.js';
 
 function fixture() {
@@ -179,6 +179,17 @@ test('Final assessments sort by class and student, or globally by student name',
   ];
   assert.deepEqual(sortFinalAssessmentRows(rows,'class').map(row=>`${row.student.className} ${row.student.first}`),['7A Anna','7A Zoey','7B Bo']);
   assert.deepEqual(sortFinalAssessmentRows(rows,'student').map(row=>`${row.student.last} ${row.student.first}`),['Andersson Anna','Andersson Bo','Zebra Zoey']);
+});
+test('Final assessment search finds every matching student record case-insensitively',()=>{
+  const rows=[
+    {student:{first:'Åsa',last:'Öberg',className:'7A'},session:{date:'2026-10-01'}},
+    {student:{first:'Åsa',last:'Öberg',className:'7A'},session:{date:'2026-11-01'}},
+    {student:{first:'Amir',last:'Andersson',className:'7A'},session:{date:'2026-10-15'}},
+  ];
+  assert.equal(filterFinalAssessmentRows(rows,'  åSA ').length,2);
+  assert.equal(filterFinalAssessmentRows(rows,'AMIR')[0],rows[2]);
+  assert.deepEqual(filterFinalAssessmentRows(rows,''),rows);
+  assert.deepEqual(filterFinalAssessmentRows(rows,'saknas'),[]);
 });
 test('Absent pupils stay out of observation unless final assessment is enabled, then are clearly identified and their final observations export',()=>{
   const d=fixture(),s=lesson(d,'2026-10-01');s.attendance.s2.absent=true;s.observations.s2={assessments:['good'],grades:['B'],note:'Slutlig teknikbedömning'};

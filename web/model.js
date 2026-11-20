@@ -78,6 +78,10 @@ export function sortFinalAssessmentRows(rows, mode = 'class') {
   const byClass = (a, b) => collator.compare(a.student.className, b.student.className);
   return [...rows].sort((a, b) => (mode === 'student' ? byStudent(a, b) || byClass(a, b) : byClass(a, b) || byStudent(a, b)) || b.session.date.localeCompare(a.session.date) || b.session.start.localeCompare(a.session.start));
 }
+export function filterFinalAssessmentRows(rows, query = '') {
+  const term = String(query).trim().toLocaleLowerCase('sv');
+  return term ? rows.filter(({ student }) => studentName(student).toLocaleLowerCase('sv').includes(term)) : [...rows];
+}
 export const assessmentLabel = id => ASSESSMENTS.find(a => a.id === id)?.label || 'Ingen observationsmarkering';
 // Read older single selections as well as the current multi-selection format.
 export function observationAssessments(o) {
