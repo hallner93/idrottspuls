@@ -208,6 +208,7 @@ public class MainActivity extends Activity {
                 int schema = object.getInt("schemaVersion");
                 if ((schema != 1 && schema != 2) || !object.has("real") || !object.has("demo")) return "Felaktigt dataformat.";
                 output = stateFile.startWrite(); output.write(bytes); stateFile.finishWrite(output);
+                try { NextLessonWidgetSupport.refreshAll(MainActivity.this); } catch (Exception ignored) { }
                 return "OK";
             } catch (Exception e) { if (output != null) stateFile.failWrite(output); return "Kunde inte spara. Kontrollera ledigt utrymme på surfplattan."; }
         }
