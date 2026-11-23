@@ -75,7 +75,7 @@ test('Video library is local, session-linked, deletable and exported separately'
   assert.match(activity, /writeVideoChunk/);
   assert.match(css, /\.video-library-controls/);
   assert.match(css, /\.next-step-card\{[^}]*border:2px solid var\(--green\)/);
-  assert.match(cache, /idrottspuls-v1\.7\.8/);
+  assert.match(cache, /idrottspuls-v1\.7\.9/);
   assert.doesNotMatch(manifest, /android\.permission\.CAMERA|android\.permission\.INTERNET|WRITE_EXTERNAL_STORAGE/);
   assert.match(app, /case 'capture-photo'/);
   assert.match(app, /id="final-student-search"/);
