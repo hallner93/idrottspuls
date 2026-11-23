@@ -75,7 +75,7 @@ test('Video library is local, session-linked, deletable and exported separately'
   assert.match(activity, /writeVideoChunk/);
   assert.match(css, /\.video-library-controls/);
   assert.match(css, /\.next-step-card\{[^}]*border:2px solid var\(--green\)/);
-  assert.match(cache, /idrottspuls-v1\.7\.7/);
+  assert.match(cache, /idrottspuls-v1\.7\.8/);
   assert.doesNotMatch(manifest, /android\.permission\.CAMERA|android\.permission\.INTERNET|WRITE_EXTERNAL_STORAGE/);
   assert.match(app, /case 'capture-photo'/);
   assert.match(app, /id="final-student-search"/);
@@ -102,3 +102,13 @@ test('Summary navigation combines absence, observations, and final assessments',
   assert.match(source, /filterFinalAssessmentRows\(ui\.finalRows/);
   assert.match(source, /student:\{\.\.\.student,className:session\.className\|\|d\.classes\.find\(c=>c\.id===session\.classId\)\?\.name/);
 });
+
+test('Attendance roster shows a live present/total counter above and below the students', async () => {
+  const source = await readFile(new URL('../web/app.js', import.meta.url), 'utf8');
+  const styles = await readFile(new URL('../web/styles.css', import.meta.url), 'utf8');
+  assert.match(source, /data-attendance-count data-total="\$\{students\.length\}" aria-live="polite">\$\{presentCount\}\/\$\{students\.length\} närvarande/g);
+  assert.equal((source.match(/class="badge green attendance-count" data-attendance-count/g) || []).length, 2);
+  assert.match(source, /if\(el\.dataset\.attendance==='absent'\)\{const present=s\.studentIds\.filter\(id=>!s\.attendanceDraft\[id\]\?\.absent\)\.length/);
+  assert.match(styles, /\.attendance-count-bottom\{display:flex;justify-content:flex-end/);
+});
+
